@@ -116,12 +116,16 @@ def sell(name, rdf_all):
             
             sell_now_str = st.session_state.now.strftime('%Y/%m/%d')
                     
-            sell_log_temp = pd.DataFrame(columns=['企業名', '年月', '売却根拠', '売却株式数', '利益','属性'])
+            sell_log_temp = pd.DataFrame(columns=['企業名', '年月', '売却根拠', '売却株式数', '売却金額', '利益', '当日のボラティリティ', '当日のボラティリティ平均','属性'])
             sell_log_temp['企業名'] = [name]
             sell_log_temp['年月'] = [sell_now_str]
             sell_log_temp['売却根拠'] = [st.session_state.basis_for_sale]
             sell_log_temp['売却株式数'] = [st.session_state.sell_num]
+            sell_amount = now_data_KK * st.session_state.sell_num
+            sell_log_temp['売却金額'] = [sell_amount]
             sell_log_temp['利益'] = [benefit]
+            sell_log_temp['当日のボラティリティ'] = [VOL_cal(name, st.session_state.now)]
+            sell_log_temp['当日のボラティリティ平均'] = [VOL_all(st.session_state.now) ]
             sell_log_temp['属性'] = ['売り']
             st.session_state.sell_log = pd.concat([st.session_state.sell_log,sell_log_temp],ignore_index=True)
 

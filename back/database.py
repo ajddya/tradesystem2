@@ -57,15 +57,33 @@ def save_userdata():
         誠実性 FLOAT,
         外交性 FLOAT,
         協調性 FLOAT,
-        神経症傾向 FLOAT
-    )
+        神経症傾向 FLOAT,
+        認知課題Q1 INTEGER,
+        認知課題Q2 INTEGER,
+        認知課題Q3 INTEGER,
+        認知課題Q4 INTEGER,
+        認知課題Q5 INTEGER,
+        認知課題Q6 INTEGER,
+        認知課題Q7 INTEGER,
+        認知課題Q8 INTEGER,
+        認知課題Q9 INTEGER,
+        認知課題Q10 INTEGER,
+        認知課題Q11 INTEGER,
+        認知課題Q12 INTEGER,
+        認知課題Q13 INTEGER,
+        認知課題Q14 INTEGER,
+        認知課題Q15 INTEGER,
+        認知課題Q16 INTEGER,
+        認知課題Q17 INTEGER,
+        認知課題Q18 INTEGER,
+        認知課題Q19 INTEGER    )
     """)
 
     # データの挿入または更新
     for _, row in st.session_state.personal_df.iterrows():
         cursor.execute("""
-        INSERT OR REPLACE INTO personal_info (ユーザ名, ユーザID, 年齢, 性別, 投資経験の有無, 投資に関する知識の有無, 開放性, 誠実性, 外交性, 協調性, 神経症傾向)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", (row["ユーザ名"], row["ユーザID"], row["年齢"], row["性別"], row["投資経験の有無"], row["投資に関する知識の有無"], row["開放性"], row["誠実性"], row["外交性"], row["協調性"], row["神経症傾向"]))
+        INSERT OR REPLACE INTO personal_info (ユーザ名, ユーザID, 年齢, 性別, 投資経験の有無, 投資に関する知識の有無, 開放性, 誠実性, 外交性, 協調性, 神経症傾向, 認知課題Q1, 認知課題Q2, 認知課題Q3, 認知課題Q4, 認知課題Q5, 認知課題Q6, 認知課題Q7, 認知課題Q8, 認知課題Q9, 認知課題Q10, 認知課題Q11, 認知課題Q12, 認知課題Q13, 認知課題Q14, 認知課題Q15, 認知課題Q16, 認知課題Q17, 認知課題Q18, 認知課題Q19)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", (row["ユーザ名"], row["ユーザID"], row["年齢"], row["性別"], row["投資経験の有無"], row["投資に関する知識の有無"], row["開放性"], row["誠実性"], row["外交性"], row["協調性"], row["神経症傾向"], row["認知課題Q1"], row["認知課題Q2"], row["認知課題Q3"], row["認知課題Q4"], row["認知課題Q5"], row["認知課題Q6"], row["認知課題Q7"], row["認知課題Q8"], row["認知課題Q9"], row["認知課題Q10"], row["認知課題Q11"], row["認知課題Q12"], row["認知課題Q13"], row["認知課題Q14"], row["認知課題Q15"], row["認知課題Q16"], row["認知課題Q17"], row["認知課題Q18"], row["認知課題Q19"]))
     
     # # result __________________________________________________________________________________________________________
 
