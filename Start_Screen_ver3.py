@@ -28,6 +28,7 @@ from back.classify_action_type import classify_action_type
 from back.reset import reset
 from back.database import save_userdata, insert_data_to_db, insert_survey_to_db
 from back.situational_dependency import situational_dependency
+from back.scoring_bias import scoring_bias
 
 # 日本語フォントの設定
 plt.rcParams['font.family'] = 'IPAexGothic'
@@ -148,7 +149,7 @@ def changeable_init():
 
     #買い・売りのログデータのデータフレーム作成
     if "buy_log" not in st.session_state:
-        st.session_state.buy_log = pd.DataFrame(columns=['企業名', '年月', '購入根拠', '購入株式数', '購入金額', '購入金額比率', '当日のボラティリティ', '当日のボラティリティ平均', '属性'])
+        st.session_state.buy_log = pd.DataFrame(columns=['企業名', '年月', '購入根拠', '購入株式数', '購入金額', '購入金額比率', '購入時総資産', '当日のボラティリティ', '当日のボラティリティ平均', '専門家予想', 'みんなの予想', '属性'])
 
     if "sell_log" not in st.session_state:
         st.session_state.sell_log = pd.DataFrame(columns=['企業名', '年月', '売却根拠', '売却株式数', '売却金額', '利益', '当日のボラティリティ', '当日のボラティリティ平均','属性'])
@@ -164,10 +165,10 @@ def changeable_init():
 
     # 個人情報のデータ
     if "personal_df" not in st.session_state:
-        st.session_state.personal_df = pd.DataFrame(columns=['ユーザID', 'ユーザ名', '年齢', '性別', '投資経験の有無', '投資に関する知識の有無', '開放性', '誠実性', '外交性', '協調性', '神経症傾向','認知課題Q1','認知課題Q2','認知課題Q3','認知課題Q4','認知課題Q5','認知課題Q6','認知課題Q7','認知課題Q8','認知課題Q9','認知課題Q10','認知課題Q11','認知課題Q12','認知課題Q13','認知課題Q14','認知課題Q15','認知課題Q16','認知課題Q17','認知課題Q18','認知課題Q19'])  
+        st.session_state.personal_df = pd.DataFrame(columns=['ユーザID', 'ユーザ名', '年齢', '性別', '投資経験の有無', '投資に関する知識の有無', '開放性', '誠実性', '外交性', '協調性', '神経症傾向','認知課題Q1','認知課題Q2','認知課題Q3','認知課題Q4','認知課題Q5','認知課題Q6','認知課題Q7','認知課題Q8','認知課題Q9','認知課題Q10','認知課題Q11','認知課題Q12','認知課題Q13','認知課題Q14','認知課題Q15','認知課題Q16','認知課題Q17','認知課題Q18','認知課題Q19','認知課題Q20','認知課題Q21'])  
 
     if "after_simulation_self_eval_df" not in st.session_state:
-        st.session_state.after_simulation_self_eval_df = pd.DataFrame(columns=['事後自己評価Q1', '事後自己評価Q2', '事後自己評価Q3', '事後自己評価Q4', '事後自己評価Q5', '事後自己評価Q6', '事後自己評価Q7','事後自己評価Q8', '事後自己評価Q9','事後自己評価Q10','事後自己評価Q11','事後自己評価Q12','事後自己評価Q13','事後自己評価Q14'])  
+        st.session_state.after_simulation_self_eval_df = pd.DataFrame(columns=['事後自己評価Q1', '事後自己評価Q2', '事後自己評価Q3', '事後自己評価Q4', '事後自己評価Q5', '事後自己評価Q6', '事後自己評価Q7','事後自己評価Q8', '事後自己評価Q9','事後自己評価Q10','事後自己評価Q11','事後自己評価Q12','事後自己評価Q13','事後自己評価Q14','事後自己評価Q15','事後自己評価Q16'])  
 
 
     if "result" not in st.session_state:
@@ -264,15 +265,15 @@ def change_page_to_result(buy_log, sell_log, possess_money):
     st.session_state.show_page = True
     st.session_state.page_id = "page5"
 
-def change_page2(num, buy_log=None, sell_log=None, benef=None, advice_df=None):
+def change_page2(num, buy_log=None, sell_log=None, benef=None, after_simulation_self_eval_df=None):
     if buy_log is not None and not buy_log.empty:
         st.session_state.buy_log_temp = buy_log
     if sell_log is not None and not sell_log.empty:
         st.session_state.sell_log_temp = sell_log
     if benef:
         st.session_state.benef_temp = benef
-    if advice_df is not None and not advice_df.empty:
-        st.session_state.advice_df_temp = advice_df
+    if after_simulation_self_eval_df is not None and not after_simulation_self_eval_df.empty:
+        st.session_state.after_simulation_self_eval_df = after_simulation_self_eval_df
 
     st.session_state.page_id2 = f"page2_{num}"
 #_____________________________________________________________________________________________________________________________
@@ -648,6 +649,20 @@ if st.session_state.show_page:
             else:
                 st.image("image/personal_prediction_5.png")
 
+    # 性格特性の点数かをする関数
+    def self_cheack_score(answor):
+        if answor == "全く違うと思う":
+            return 1
+        elif answor == "少し違うと思う":
+            return 2
+        elif answor == "少しそう思う":
+            return 3
+        elif answor == "強くそう思う":
+            return 4
+        else:
+            return "その答えはありません"
+
+
     # 事後アンケート
     def page5():
         st.title("自己評価アンケート")
@@ -689,7 +704,12 @@ if st.session_state.show_page:
             st.subheader("")
             st.session_state.after_simulation_Q11 = st.radio("今振り返ると、より良い判断ができたと思う。", after_simulation_Q_arrow, horizontal=True)
             st.subheader("")
-            st.session_state.after_simulation_Q12 = st.radio("実験での判断は普段の自分に近いと感じた。", after_simulation_Q_arrow, horizontal=True)
+            st.session_state.after_simulation_Q12 = st.radio("自分の投資判断は、運や偶然による部分が大きいと思う。", after_simulation_Q_arrow, horizontal=True)
+            st.subheader("")
+            st.session_state.after_simulation_Q13 = st.radio("持ち金を減らさないために売買しない選択をした。", after_simulation_Q_arrow, horizontal=True)
+            st.subheader("")
+
+            st.session_state.after_simulation_Q14 = st.radio("実験での判断は普段の自分に近いと感じた。", after_simulation_Q_arrow, horizontal=True)
             st.subheader("")
 
             buy_reason_arrow = [
@@ -709,7 +729,7 @@ if st.session_state.show_page:
                 "その他"
             ]
             #購入根拠
-            st.session_state.after_simulation_Q13 = st.radio("あなたは株を購入する際の主な理由はなんでしたか。", buy_reason_arrow)
+            st.session_state.after_simulation_Q15 = st.radio("あなたは株を購入する際の主な理由はなんでしたか。", buy_reason_arrow)
 
             sell_reason_arrow = [
                 "チャート形状",
@@ -724,23 +744,25 @@ if st.session_state.show_page:
             ]
 
             #売却根拠
-            st.session_state.after_simulation_Q14 = st.radio("あなたは株を売却する際の主な理由はなんでしたか。", sell_reason_arrow)
+            st.session_state.after_simulation_Q16 = st.radio("あなたは株を売却する際の主な理由はなんでしたか。", sell_reason_arrow)
 
             if st.button(" 結果画面へ "):
-                st.session_state.after_simulation_self_eval_df.loc[0, "事後自己評価Q1"] = st.session_state.after_simulation_Q1
-                st.session_state.after_simulation_self_eval_df.loc[0, "事後自己評価Q2"] = st.session_state.after_simulation_Q2
-                st.session_state.after_simulation_self_eval_df.loc[0, "事後自己評価Q3"] = st.session_state.after_simulation_Q3
-                st.session_state.after_simulation_self_eval_df.loc[0, "事後自己評価Q4"] = st.session_state.after_simulation_Q4
-                st.session_state.after_simulation_self_eval_df.loc[0, "事後自己評価Q5"] = st.session_state.after_simulation_Q5
-                st.session_state.after_simulation_self_eval_df.loc[0, "事後自己評価Q6"] = st.session_state.after_simulation_Q6
-                st.session_state.after_simulation_self_eval_df.loc[0, "事後自己評価Q7"] = st.session_state.after_simulation_Q7
-                st.session_state.after_simulation_self_eval_df.loc[0, "事後自己評価Q8"] = st.session_state.after_simulation_Q8
-                st.session_state.after_simulation_self_eval_df.loc[0, "事後自己評価Q9"] = st.session_state.after_simulation_Q9
-                st.session_state.after_simulation_self_eval_df.loc[0, "事後自己評価Q10"] = st.session_state.after_simulation_Q10
-                st.session_state.after_simulation_self_eval_df.loc[0, "事後自己評価Q11"] = st.session_state.after_simulation_Q11
-                st.session_state.after_simulation_self_eval_df.loc[0, "事後自己評価Q12"] = st.session_state.after_simulation_Q12
-                st.session_state.after_simulation_self_eval_df.loc[0, "事後自己評価Q13"] = st.session_state.after_simulation_Q13
-                st.session_state.after_simulation_self_eval_df.loc[0, "事後自己評価Q14"] = st.session_state.after_simulation_Q14
+                st.session_state.after_simulation_self_eval_df.loc[0, "事後自己評価Q1"] = self_cheack_score(st.session_state.after_simulation_Q1)
+                st.session_state.after_simulation_self_eval_df.loc[0, "事後自己評価Q2"] = self_cheack_score(st.session_state.after_simulation_Q2) 
+                st.session_state.after_simulation_self_eval_df.loc[0, "事後自己評価Q3"] = self_cheack_score(st.session_state.after_simulation_Q3)
+                st.session_state.after_simulation_self_eval_df.loc[0, "事後自己評価Q4"] = self_cheack_score(st.session_state.after_simulation_Q4)
+                st.session_state.after_simulation_self_eval_df.loc[0, "事後自己評価Q5"] = self_cheack_score(st.session_state.after_simulation_Q5)
+                st.session_state.after_simulation_self_eval_df.loc[0, "事後自己評価Q6"] = self_cheack_score(st.session_state.after_simulation_Q6)
+                st.session_state.after_simulation_self_eval_df.loc[0, "事後自己評価Q7"] = self_cheack_score(st.session_state.after_simulation_Q7)
+                st.session_state.after_simulation_self_eval_df.loc[0, "事後自己評価Q8"] = self_cheack_score(st.session_state.after_simulation_Q8)
+                st.session_state.after_simulation_self_eval_df.loc[0, "事後自己評価Q9"] = self_cheack_score(st.session_state.after_simulation_Q9)
+                st.session_state.after_simulation_self_eval_df.loc[0, "事後自己評価Q10"] = self_cheack_score(st.session_state.after_simulation_Q10)
+                st.session_state.after_simulation_self_eval_df.loc[0, "事後自己評価Q11"] = self_cheack_score(st.session_state.after_simulation_Q11)
+                st.session_state.after_simulation_self_eval_df.loc[0, "事後自己評価Q12"] = self_cheack_score(st.session_state.after_simulation_Q12)
+                st.session_state.after_simulation_self_eval_df.loc[0, "事後自己評価Q13"] = self_cheack_score(st.session_state.after_simulation_Q13)
+                st.session_state.after_simulation_self_eval_df.loc[0, "事後自己評価Q14"] = self_cheack_score(st.session_state.after_simulation_Q14)
+                st.session_state.after_simulation_self_eval_df.loc[0, "事後自己評価Q15"] = st.session_state.after_simulation_Q15
+                st.session_state.after_simulation_self_eval_df.loc[0, "事後自己評価Q16"] = st.session_state.after_simulation_Q16
 
                 st.session_state.page_id = "simulation_result"
                 st.rerun()
@@ -1163,30 +1185,201 @@ if st.session_state.show_page:
             colored_text = f"あなたは　<span style='font-size:30px'><span style='color:red'> +{round(benef,1)}円</span> </span>の利益を出しました。"
             st.markdown(colored_text, unsafe_allow_html=True)
 
-        st.write("個人特性・認知課題群")
-        st.write(st.session_state.personal_df)
+        st.write("_______________________________________________________________________________________________________")
+        # 状況依存バイアスのスコアを計算
+        situational_bias_df = situational_dependency(st.session_state.buy_log, st.session_state.sell_log)
 
-        # st.write("購入・売却履歴")
-        st.write(st.session_state.buy_log)
-        st.write(st.session_state.sell_log)
+        # 各バイアスのスコアを計算
+        bias_score_df = scoring_bias(st.session_state.personal_df, situational_bias_df, st.session_state.after_simulation_self_eval_df)
 
-        st.write("状況依存バイアス")
-        st.write(situational_dependency(st.session_state.buy_log, st.session_state.sell_log))
-
-        st.write("事後自己評価")
-        st.write(st.session_state.after_simulation_self_eval_df)
-
-
-        #############################################################################################
         # バイアスの4分類(状況依存型、個人特性型、認知構造型、社会文化型)の尺度を提示
+        bias_categorize_df = pd.DataFrame(columns=['バイアス分類', '平均点'])
+        bias_categorize_df_temp = pd.DataFrame(columns=['バイアス分類', '平均点'])
+        
+        # 状況依存型
+            # 「購入根拠」が「損失回避傾向, 近視眼的思考, ブレークイーブン効果, 現在思考バイアス」の行を抽出
+        mask = bias_score_df["バイアス"].isin(["損失回避傾向", "近視眼的思考", "ブレークイーブン効果", "現在思考バイアス"])
+            # 平均点を算出
+        score = bias_score_df.loc[mask, "点数"].mean()
+
+        bias_categorize_df_temp['バイアス分類'] = ["状況依存型"]
+        bias_categorize_df_temp['平均点'] = [score]
+        bias_categorize_df = pd.concat([bias_categorize_df,bias_categorize_df_temp], ignore_index=True)
+
+        # 個人特性型
+            # 「購入根拠」が「"現状維持", "楽観性", "自信過剰"」の行を抽出
+        mask = bias_score_df["バイアス"].isin(["現状維持バイアス", "楽観性バイアス", "自信過剰"])
+            # 平均点を算出
+        score = bias_score_df.loc[mask, "点数"].mean()
+
+        bias_categorize_df_temp['バイアス分類'] = ["個人特性型"]
+        bias_categorize_df_temp['平均点'] = [score]
+        bias_categorize_df = pd.concat([bias_categorize_df,bias_categorize_df_temp], ignore_index=True)
+
+        # 認知構造型
+            # 「購入根拠」が「"保守主義バイアス", "後知恵バイアス", "自己正当化バイアス", "ハロー効果"」の行を抽出
+        mask = bias_score_df["バイアス"].isin(["保守主義バイアス", "後知恵バイアス", "自己正当化バイアス", "ハロー効果"])
+            # 平均点を算出
+        score = bias_score_df.loc[mask, "点数"].mean()
+
+        bias_categorize_df_temp['バイアス分類'] = ["認知構造型"]
+        bias_categorize_df_temp['平均点'] = [score]
+        bias_categorize_df = pd.concat([bias_categorize_df,bias_categorize_df_temp], ignore_index=True)
+
+        # 社会文化型
+            # 「購入根拠」が「"権威", "同調"」の行を抽出
+        mask = bias_score_df["バイアス"].isin(["権威バイアス", "同調バイアス"])
+            # 平均点を算出
+        score = bias_score_df.loc[mask, "点数"].mean()
+
+        bias_categorize_df_temp['バイアス分類'] = ["社会文化型"]
+        bias_categorize_df_temp['平均点'] = [score]
+        bias_categorize_df = pd.concat([bias_categorize_df,bias_categorize_df_temp], ignore_index=True)
 
 
+        st.write("################################################################################")
+        check = st.checkbox("投資行動の情報を表示", value = False)
+        if check:
+            st.write("個人特性・認知課題群")
+            st.write(st.session_state.personal_df)
+
+            st.write("購入・売却履歴")
+            st.write(st.session_state.buy_log)
+            st.write(st.session_state.sell_log)
+
+            st.write("状況依存バイアス")
+            st.write(situational_bias_df)
+
+            st.write("事後自己評価")
+            st.write(st.session_state.after_simulation_self_eval_df)
+
+            st.write("各バイアスの点数")
+            st.write(bias_score_df)
+
+            st.write("各バイアス分類の評価")
+            st.write(bias_categorize_df)
+
+        st.write("################################################################################")
+        
+        ################################ 個人特性型のバイアスから投資行動パターンを提示 #####################################
+        st.subheader("あなたの投資行動型")
+
+        # 個人特性型バイアスのうち最大のものを持ってくる
+        mask = bias_score_df["バイアス"].isin(["現状維持バイアス", "楽観性バイアス", "自信過剰"])
+        bias_score_df_personal = bias_score_df.loc[mask].reset_index(drop=True)
+        bias_score_df_not_personal = bias_score_df.loc[~mask].reset_index(drop=True)
+
+        # 平均点が高い順（降順）に並び替え
+        bias_score_df_sorted = bias_score_df_not_personal.sort_values(by="点数", ascending=False).reset_index(drop=True)
+
+        # 悲観性バイアスの追加
+        bias_score_df_personal_temp = pd.DataFrame(columns=['バイアス', '点数'])
+        score = 100 - bias_score_df[bias_score_df["バイアス"]=="楽観性バイアス"]["点数"].values[0]
+
+        bias_score_df_personal_temp['バイアス'] = ["悲観性バイアス"]
+        bias_score_df_personal_temp['点数'] = [score]
+        bias_score_df_personal = pd.concat([bias_score_df_personal,bias_score_df_personal_temp], ignore_index=True)
+
+        # 自己依存型の中で最大のバイアスを持ってくる
+        max_parsonal_bias = bias_score_df_personal[bias_score_df_personal["点数"]==bias_score_df_personal["点数"].max()]["バイアス"].values[0]
+
+        # 現状維持バイアス、楽観性バイアス（悲観性バイアス）、自信過剰で投資行動型を表示
+        if max_parsonal_bias == "現状維持バイアス":
+            categorize_text = f"<span style='font-size:30px'><span style='color:red'> 変化を極力避けるタイプ </span> </span>"
+            st.markdown(categorize_text, unsafe_allow_html=True)
+            st.write("新しいことに慎重で、今のやり方を大切にする傾向があります。そのため、リスクを抑えながら安定した成果を目指す場面では強みを発揮できます。")
+            st.write("一方で、新しい機会を逃しやすい傾向もあります。まずは小さな変化（資産の一部を使った実験的投資）から試すことで、安定性を保ちながら柔軟な判断力を育てることができます。")
+        elif max_parsonal_bias == "楽観性バイアス":
+            categorize_text = f"<span style='font-size:30px'><span style='color:red'> 人生何とかなると思っているタイプ </span> </span>"
+            st.markdown(categorize_text, unsafe_allow_html=True)
+            st.write("あなたの前向きさは、挑戦を恐れずに行動できる大きな強みです。")
+            st.write("一方で、リスクを軽視してしまう傾向もあるため、判断の前に「最悪のケース」を一度考えると、より安定した成果につながります。明るい見通しを持ちながらも、データや根拠を大切にする姿勢を意識していきましょう。")
+        elif max_parsonal_bias == "悲観性バイアス":
+            categorize_text = f"<span style='font-size:30px'><span style='color:red'> 行動に常に心配がつきまとうタイプ </span> </span>"
+            st.markdown(categorize_text, unsafe_allow_html=True)
+            st.write("あなたの慎重さは、大きな失敗を避けるうえで大きな強みです。")
+            st.write("一方で、不安を感じすぎると行動が止まってしまうこともあります。まずは小さな成功体験を積み重ねながら、自分の判断への信頼を育てていきましょう。「慎重に考える力」を生かして、リスクを抑えながら安定的に成果を狙う投資が向いています。")
+        elif max_parsonal_bias == "自信過剰":
+            categorize_text = f"<span style='font-size:30px'><span style='color:red'> 自分の判断に自信を持っているタイプ </span> </span>"
+            st.markdown(categorize_text, unsafe_allow_html=True)
+            st.write("あなたの決断力と行動力は、大きなチャンスをつかむための重要な強みです。")
+            st.write("ただし、判断の根拠を客観的に確認する習慣を持つと、より安定した成果が得られます。自信を「経験に裏づけられた自信」に育てることで、長期的に安定した投資判断ができるようになります。")
+        else:
+            st.write("投資行動型なし")
+
+        st.subheader("")
+        
+        ################################ レーダーチャートの作成 #####################################
+        st.subheader("各バイアス分類の評価")
+        categories = bias_categorize_df['バイアス分類'].tolist()
+        values = bias_categorize_df['平均点'].tolist()
+
+        # レーダーチャートを閉じるために先頭を末尾に追加
+        values += values[:1]
+        categories += categories[:1]
+
+        # Nを-1してラベルは閉じ用の最後の1点を除く
+        N = len(categories) - 1
+        angles = [n / float(N) * 2 * np.pi for n in range(len(categories))]
+
+        # プロット作成
+        fig = plt.figure(figsize=(3,3))
+        ax = plt.subplot(111, polar=True)
+        ax.set_theta_offset(np.pi / 2)
+        ax.set_theta_direction(-1)
+
+        # ラベルは最後の閉じ点を除く
+        plt.xticks(angles[:-1], categories[:-1])
+
+        # データプロット
+        ax.plot(angles, values, linewidth=1, linestyle='solid', label='スコア')
+        ax.fill(angles, values, 'skyblue', alpha=0.4)
+
+        # plt.title("バイアス分類ごとの平均点レーダーチャート", size=10, y=1.1)
+        plt.legend(loc='upper right', bbox_to_anchor=(0.1, 0.1))
+
+        # Streamlitで表示
+        st.pyplot(fig)
+
+        max_score = bias_categorize_df["平均点"].max()
+        top_biases = bias_categorize_df[bias_categorize_df["平均点"] == max_score]
+        categorize_bias = top_biases['バイアス分類'].values[0]
+
+        categorize_text = f"最も影響を受けているバイアス型は　<span style='font-size:30px'><span style='color:red'> {categorize_bias} </span> </span>です。"
+        st.markdown(categorize_text, unsafe_allow_html=True)
+        if categorize_bias == "状況依存型":
+            st.write("あなたは、状況や環境によって判断が左右されやすい傾向にあります。")
+            st.write("この認知バイアス型が強い人は、短期的な誘惑やプレッシャーで合理的判断が難しくなる傾向にありあmす。")
+        elif categorize_bias == "個人特性型":
+            st.write("あなたは、性格や感情傾向などの個人特性基づくバイアスに影響されやすい傾向にあります。")
+            st.write("この認知バイアス型は、比較的安定して現れるため、日常生活でも繰り返し観察されます。")
+        elif categorize_bias == "認知構造型":
+            st.write("あなたは、情報の処理や思考の仕組み自体に起因するバイアスに影響されやすい傾向にあります。")
+            st.write("この認知バイアス型は、論理的ではなく、判断のクセとして現れます。")
+        elif categorize_bias == "社会文化型":
+            st.write("あなたは、他者や社会的環境の影響で判断が偏る傾向にあります。")
+            st.write("この認知バイアス型では、社会的圧力や文化的価値観がバイアスを強めます。")
+        else:
+            st.write("分類型の説明なし")
+
+        st.subheader("")
+
+        ################################　影響を受けているバイアスの提示　############################################
         # 特に影響の強いバイアスのみを提示(バイアスの説明、日常生活で起こりうる判断の例)
-        #                 st.markdown(f'<p style="font-family:fantasy; color:green; font-size: 24px;">{st.session_state.trade_advice_df.iloc[i]["指摘事項"]}</p>', unsafe_allow_html=True)
-        #                 target_BE2 = st.session_state.Behavioral_Economics[st.session_state.Behavioral_Economics['理論']==st.session_state.trade_advice_df.iloc[i]['指摘事項']]
-        #                 target_BE2 = target_BE2.reset_index(drop=True)
-        #                 st.write(target_BE2['内容'][0])
-        #############################################################################################
+        st.subheader("影響を受けている認知バイアス")
+
+        # 点数が高いバイアス3つを表示する
+        for i in range(0,3):
+            bias = bias_score_df_sorted["バイアス"][i]
+            st.markdown(f'<p style="font-family:fantasy; color:blue; font-size: 24px;">{bias}</p>', unsafe_allow_html=True)
+            bias_df = st.session_state.Behavioral_Economics[st.session_state.Behavioral_Economics["バイアス"]==bias]
+            st.write(bias_df["内容"].values[0])
+            st.write("【例】")
+            st.write(f"　　{bias_df['例'].values[0]}")
+            st.subheader("")
+
+
+        #####################################　シミュレーション結果の保存　##########################################
 
         #現在時刻情報を取得
         dt_now = dt.datetime.now()
@@ -1199,7 +1392,7 @@ if st.session_state.show_page:
 
         # 変数の割り当て(とりあえずテキトー)
         action_type = "保守型"
-        st.session_state.bias_class_port = pd.DataFrame(["バイアスの各分類の尺度"])
+        # st.session_state.bias_class_port = pd.DataFrame(["バイアスの各分類の尺度"])
         st.session_state.pointed_out_bias_df = pd.DataFrame(["指摘したバイアス"])
 
         # ユーザからの情報をデータフレームとして受け取る
@@ -1212,14 +1405,15 @@ if st.session_state.show_page:
             "buy_log": [st.session_state.buy_log],
             "sell_log": [st.session_state.sell_log],
             "Dividends": [Dividends_df_temp],
-            "バイアス分類ポートフォリオ": [st.session_state.bias_class_port],
-            "指摘バイアス": [st.session_state.pointed_out_bias_df],
+            "状況依存バイアス": [situational_bias_df],
+            "バイアス分類レーダーチャート": [bias_categorize_df],
+            "指摘バイアス": [bias_score_df],
             "事後自己評価": [st.session_state.after_simulation_self_eval_df]
         }
         Simulation_Results_df = pd.DataFrame(Simulation_Result)
 
         #実績画面にデータを保存する
-        Simulation_Results_instance = Simulation_Results(dates=dt_now_str, num=st.session_state.num, action_type=action_type, LEVEL=st.session_state.level_id, investment_result=benef, buy_log=st.session_state.buy_log, sell_log=st.session_state.sell_log, Dividends=st.session_state.Dividends_df, bias_class_port=st.session_state.bias_class_port, pointed_out_bias=st.session_state.pointed_out_bias_df, self_eval=st.session_state.after_simulation_self_eval_df)
+        Simulation_Results_instance = Simulation_Results(dates=dt_now_str, num=st.session_state.num, action_type=action_type, LEVEL=st.session_state.level_id, investment_result=benef, buy_log=st.session_state.buy_log, sell_log=st.session_state.sell_log, Dividends=st.session_state.Dividends_df,situational_bias=situational_bias_df, bias_class_port=bias_categorize_df, pointed_out_bias=bias_score_df, self_eval=st.session_state.after_simulation_self_eval_df)
 
         if st.session_state.result_bool == False:
             # クラスを利用してresultにデータを保存する
@@ -1246,8 +1440,8 @@ if st.session_state.show_page:
         #購入株式数
         st.session_state.buy_num = st.slider("購入株式数", 100, 1000, st.session_state.get("buy_num", 100),step=100)
 
-        if "Rationale_for_purchase" not in st.session_state:
-            st.session_state.Rationale_for_purchase = "指定なし"
+        # if "Rationale_for_purchase" not in st.session_state:
+        #     st.session_state.Rationale_for_purchase = "指定なし"
 
         # buy_reason_arrow = [
         #     "チャート形状",
@@ -1296,8 +1490,8 @@ if st.session_state.show_page:
         #売却株式数
         st.session_state.sell_num = st.slider("売却株式数", 100, 1000, st.session_state.get("sell_num", 100),step=100)
 
-        if "basis_for_sale" not in st.session_state:
-            st.session_state.basis_for_sale = "指定なし"
+        # if "basis_for_sale" not in st.session_state:
+        #     st.session_state.basis_for_sale = "指定なし"
 
         # sell_reason_arrow = [
         #     "チャート形状",
@@ -1517,7 +1711,8 @@ else:
         for i, result in enumerate(st.session_state.result, start=1):
             st.subheader(f"第{i}回")
             result.display()
-            st.button("結果を見る", key=f"result_{i}", on_click=partial(change_page2, 6, result.buy_log, result.sell_log, result.investment_result, result.bias_class_port))
+
+            st.button("結果を見る", key=f"result_{i}", on_click=lambda res=result: change_page2(6, res.buy_log, res.sell_log, res.investment_result, res.self_eval))
 
             st.write("########################################################################################")
 
@@ -1562,6 +1757,8 @@ else:
         st.session_state.personal_df["認知課題Q17"] = st.session_state.bias_Q17,
         st.session_state.personal_df["認知課題Q18"] = st.session_state.bias_Q18,
         st.session_state.personal_df["認知課題Q19"] = st.session_state.bias_Q19
+        st.session_state.personal_df["認知課題Q20"] = st.session_state.bias_Q20,
+        st.session_state.personal_df["認知課題Q21"] = st.session_state.bias_Q21
         change_page2(1)
 
     def load_data(acount_name):
@@ -1609,7 +1806,8 @@ else:
         st.session_state.bias_Q17 = int(rows[0][27])
         st.session_state.bias_Q18 = int(rows[0][28])
         st.session_state.bias_Q19 = int(rows[0][29])
-
+        st.session_state.bias_Q20 = int(rows[0][30])
+        st.session_state.bias_Q21 = int(rows[0][31])
 
         # resultデータの取り出し
         st.session_state.result = [] 
@@ -1753,7 +1951,7 @@ else:
             st.error("そのアカウント名はすでに使われているため使用できません")
             st.session_state.acount_name = ""
 
-        st.session_state.acount_age = st.text_input("年齢を入力してください", value=st.session_state.get("acount_age", ""))
+        st.session_state.acount_age = st.text_input("年齢を入力してください（任意）", value=st.session_state.get("acount_age", ""))
         st.session_state.acount_sex = st.selectbox("性別を入力してください", ("男", "女"), index=0 if st.session_state.get("acount_sex", "男") == "男" else 1)
         
         #投資経験の有無
@@ -1847,11 +2045,12 @@ else:
         st.session_state.bias_Q13 = st.slider("第一印象が良い人や企業は、内容も良いと感じることが多い。", 1, 5, st.session_state.get("bias_Q13", 1))
         st.session_state.bias_Q14 = st.slider("損をしても、焦らずに行動を控えることができる。", 1, 5, st.session_state.get("bias_Q14", 1))
         st.session_state.bias_Q15 = st.slider("物事の結果を聞いたとき、「やっぱりそうなると思っていた」と感じることが多い。", 1, 5, st.session_state.get("bias_Q15", 1))
-        st.session_state.bias_Q16 = st.slider("新しい情報を見聞きしたら、すぐに自分の考えを修正するほうだ。", 1, 5, st.session_state.get("bias_Q16", 1))
-        st.session_state.bias_Q17 = st.slider("有名人や専門家の意見でも、自分で確かめるまでは信用しない。", 1, 5, st.session_state.get("bias_Q17", 1))
-        st.session_state.bias_Q18 = st.slider("第一印象が良くても、実際の内容を確認するまで評価を保留する。", 1, 5, st.session_state.get("bias_Q18", 1))
-        st.session_state.bias_Q19 = st.slider("結果を聞いたあとも、「自分はそう予想していなかった」と素直に思える。", 1, 5, st.session_state.get("bias_Q19", 1))
-
+        st.session_state.bias_Q16 = st.slider("失敗しても、状況が悪かっただけだと思うことが多い。", 1, 5, st.session_state.get("bias_Q16", 1))
+        st.session_state.bias_Q17 = st.slider("新しい情報を見聞きしたら、すぐに自分の考えを修正するほうだ。", 1, 5, st.session_state.get("bias_Q17", 1))
+        st.session_state.bias_Q18 = st.slider("有名人や専門家の意見でも、自分で確かめるまでは信用しない。", 1, 5, st.session_state.get("bias_Q18", 1))
+        st.session_state.bias_Q19 = st.slider("第一印象が良くても、実際の内容を確認するまで評価を保留する。", 1, 5, st.session_state.get("bias_Q19", 1))
+        st.session_state.bias_Q20 = st.slider("結果を聞いたあとも、「自分はそう予想していなかった」と素直に思える。", 1, 5, st.session_state.get("bias_Q20", 1))
+        st.session_state.bias_Q21 = st.slider("自分の行動に問題があったと気づいたら、素直に認める方だ。。", 1, 5, st.session_state.get("bias_Q21", 1))
 
 
         if not check_acount_name(st.session_state.acount_name) and (st.session_state.acount_name != ""):
@@ -2134,308 +2333,153 @@ else:
             colored_text = f"あなたは　<span style='font-size:30px'><span style='color:red'> +{round(st.session_state.benef_temp,1)}円</span> </span>の利益を出しました。"
             st.markdown(colored_text, unsafe_allow_html=True)
 
-        # リスク許容度計算
-        VOL_delta_list = []
-        for i in range(0, len(st.session_state.buy_log_temp)):
-            VOL_delta = st.session_state.buy_log_temp["当日のボラティリティ"][i] - st.session_state.buy_log_temp["当日のボラティリティ平均"][i]
-            VOL_delta_list.append(VOL_delta)
-            
-        V_delta_mean = round(np.mean(VOL_delta_list), 2)
-        Risk_tolerance = "中"
-        if V_delta_mean < -1.0:
-            Risk_tolerance = "低"
-        
-        if V_delta_mean > 1.0:
-            Risk_tolerance = "高"
-
-        # 売買期間計算
-        tern_delta_list = []
-        for i in range(0, len(st.session_state.sell_log_temp)):
-            sell_day = st.session_state.sell_log_temp["年月"][i]
-            sell_day = dt.datetime.strptime(sell_day, "%Y/%m/%d")
-            c_name = st.session_state.sell_log_temp["企業名"][i]
-            buy_day_df = st.session_state.buy_log_temp[st.session_state.buy_log_temp['企業名']==c_name]
-            for j in range(0, len(buy_day_df)):
-                buy_day = dt.datetime.strptime(buy_day_df.iloc[j]['年月'], "%Y/%m/%d")
-                tern_delta = sell_day - buy_day
-                tern_delta_day = tern_delta.days
-                if tern_delta_day > 0:
-                    tern_delta_list.append(tern_delta_day)
-            
-        tern_mean = round(np.mean(tern_delta_list), 2)
-        tern = "短"                
-        if tern_mean > 100:
-            tern = "長"
-
-        # 購入金額比率計算
-        buy_rate_list = []
-        for i in range(0, len(st.session_state.buy_log_temp)):
-            buy_rate = st.session_state.buy_log_temp['購入金額比率'][i]
-            buy_rate_list.append(buy_rate)
-
-        buy_rate_mean = round(np.mean(buy_rate_list), 2)
-        tendency = "集中投資型"
-        if buy_rate_mean < 0.2:
-            tendency = "分散投資型"
-
-        behavioral_sell_data = {
-            "取引回数": [len(st.session_state.sell_log_temp)], 
-            "投資根拠": [st.session_state.sell_log_temp['売却根拠']],
-            "運用成績": [st.session_state.sell_log_temp['利益']],  
-            "取引株式数": [st.session_state.sell_log_temp['売却株式数']]
-        }
-        bdf = pd.DataFrame(behavioral_sell_data)
-
-        # ユーザからの情報をデータフレームとして受け取る
-        behavioral_buy_data = {
-            "取引回数": [len(st.session_state.buy_log_temp)],  # 1年間の取引回数
-            "投資根拠": [st.session_state.buy_log_temp['購入根拠']],
-            "取引量": [st.session_state.buy_log_temp['購入金額']]
-        }
-        bdf2 = pd.DataFrame(behavioral_buy_data)
-
-        trade_value = display_distribution(bdf2['取引量'][0])
-        wield_grades = display_distribution(bdf['運用成績'][0])
-        
-        buy_reason_count, buy_reason_ratios = display_distribution2(bdf2['投資根拠'][0])
-        sell_reason_count, sell_reason_ratios = display_distribution2(bdf['投資根拠'][0])
-
-        #個人の性格情報から分類型にポイントを与える
-        st.session_state.personal['性格']['新規性'] = st.session_state.Open
-        st.session_state.personal['性格']['誠実性'] = st.session_state.Integrity
-        st.session_state.personal['性格']['外交性'] = st.session_state.Diplomatic
-        st.session_state.personal['性格']['協調性'] = st.session_state.Coordination
-        st.session_state.personal['性格']['神経症傾向'] = st.session_state.Neuroticism
-
-        classify_type_df = classify_action_type(st.session_state.personal, st.session_state.sell_log_temp, buy_reason_ratios, sell_reason_ratios, trade_value, wield_grades)
-
-        # 最も高いポイントに分類
-        action_type = classify_type_df[classify_type_df['分類型']==classify_type_df['分類型'].max()].index.values[0]
-
-        target_action_type = st.session_state.action_type_advice[st.session_state.action_type_advice["行動型"]==action_type]
-        target_action_type = target_action_type.reset_index(drop=True)
-
-        feature = target_action_type["特徴"][0]
-        weekness = target_action_type["欠点"][0]
-        advice_text = target_action_type["アドバイス"][0]
-        essay = target_action_type["文章"][0]
-
         st.write("_______________________________________________________________________________________________________")
-        st.subheader("総合評価")
-        # 枠線で囲む文章
-        overall_advice_temp = st.session_state.overall_advice[st.session_state.overall_advice["リスク許容度"]==Risk_tolerance]
-        overall_advice_temp = overall_advice_temp[overall_advice_temp["売買期間"]==tern]
-        overall_advice_temp = overall_advice_temp[overall_advice_temp["投資傾向"]==tendency]
-        overall_advice_temp = overall_advice_temp[overall_advice_temp["投資型"]==action_type]
+        # 状況依存バイアスのスコアを計算
+        situational_bias_df = situational_dependency(st.session_state.buy_log, st.session_state.sell_log)
 
-        text = overall_advice_temp['アドバイス'].values[0]
+        # 各バイアスのスコアを計算
+        bias_score_df = scoring_bias(st.session_state.personal_df, situational_bias_df, st.session_state.after_simulation_self_eval_df)
 
-        html_code = f"""
-        <div style="
-            border: 2px solid #000000;
-            border-radius: 5px;
-            padding: 10px;
-        ">
-            {text}
-        </div>
-        """
-        st.markdown(html_code, unsafe_allow_html=True)
+        # 平均点が高い順（降順）に並び替え
+        bias_score_df_sorted = bias_score_df.sort_values(by="点数", ascending=False).reset_index(drop=True)
 
-        st.write("_______________________________________________________________________________________________________")
+        # バイアスの4分類(状況依存型、個人特性型、認知構造型、社会文化型)の尺度を提示
+        bias_categorize_df = pd.DataFrame(columns=['バイアス分類', '平均点'])
+        bias_categorize_df_temp = pd.DataFrame(columns=['バイアス分類', '平均点'])
+        
+        # 状況依存型
+            # 「購入根拠」が「損失回避傾向, 近視眼的思考, ブレークイーブン効果, 現在思考バイアス」の行を抽出
+        mask = bias_score_df["バイアス"].isin(["損失回避傾向", "近視眼的思考", "ブレークイーブン効果", "現在思考バイアス"])
+            # 平均点を算出
+        score = bias_score_df.loc[mask, "点数"].mean()
 
-        st.subheader("全体の投資傾向について")
+        bias_categorize_df_temp['バイアス分類'] = ["状況依存型"]
+        bias_categorize_df_temp['平均点'] = [score]
+        bias_categorize_df = pd.concat([bias_categorize_df,bias_categorize_df_temp], ignore_index=True)
 
-        st.markdown('<p style="font-family:fantasy; color:salmon; font-size: 24px;">投資行動型</p>', unsafe_allow_html=True)
-        st.markdown(f'<p style="font-family:fantasy; color:blue; font-size: 24px;">{action_type}</p>', unsafe_allow_html=True)
-        # st.write("特徴：")
-        # st.write(feature)
-        # st.write("欠点：")
-        # st.write(weekness)
-        # st.write("アドバイス：")
-        # st.write(advice_text)
-        html_code = f"""
-        <div style="
-            border: 2px solid #000000;
-            border-radius: 5px;
-            padding: 10px;
-        ">
-            {essay}
-        </div>
-        """
-        st.markdown(html_code, unsafe_allow_html=True)
+        # 個人特性型
+            # 「購入根拠」が「"現状維持", "楽観性", "自信過剰"」の行を抽出
+        mask = bias_score_df["バイアス"].isin(["現状維持バイアス", "楽観性バイアス", "自信過剰"])
+            # 平均点を算出
+        score = bias_score_df.loc[mask, "点数"].mean()
 
+        bias_categorize_df_temp['バイアス分類'] = ["個人特性型"]
+        bias_categorize_df_temp['平均点'] = [score]
+        bias_categorize_df = pd.concat([bias_categorize_df,bias_categorize_df_temp], ignore_index=True)
 
-        st.session_state.check = False
+        # 認知構造型
+            # 「購入根拠」が「"保守主義バイアス", "後知恵バイアス", "自己正当化バイアス", "ハロー効果"」の行を抽出
+        mask = bias_score_df["バイアス"].isin(["保守主義バイアス", "後知恵バイアス", "自己正当化バイアス", "ハロー効果"])
+            # 平均点を算出
+        score = bias_score_df.loc[mask, "点数"].mean()
+
+        bias_categorize_df_temp['バイアス分類'] = ["認知構造型"]
+        bias_categorize_df_temp['平均点'] = [score]
+        bias_categorize_df = pd.concat([bias_categorize_df,bias_categorize_df_temp], ignore_index=True)
+
+        # 社会文化型
+            # 「購入根拠」が「"権威", "同調"」の行を抽出
+        mask = bias_score_df["バイアス"].isin(["権威バイアス", "同調バイアス"])
+            # 平均点を算出
+        score = bias_score_df.loc[mask, "点数"].mean()
+
+        bias_categorize_df_temp['バイアス分類'] = ["社会文化型"]
+        bias_categorize_df_temp['平均点'] = [score]
+        bias_categorize_df = pd.concat([bias_categorize_df,bias_categorize_df_temp], ignore_index=True)
+
 
         st.write("################################################################################")
-        check = st.checkbox("投資行動の情報を表示", value = st.session_state.check)
+        check = st.checkbox("投資行動の情報を表示", value = False)
         if check:
-            st.markdown('<p style="font-family:fantasy; color:salmon; font-size: 24px;">リスク許容度</p>', unsafe_allow_html=True)
-            st.write(f"ボラティリティ誤差平均：{V_delta_mean}")
-            st.write(f"リスク許容度：{Risk_tolerance}")
+            st.write("個人特性・認知課題群")
+            st.write(st.session_state.personal_df)
 
-            st.markdown('<p style="font-family:fantasy; color:salmon; font-size: 24px;">売買期間</p>', unsafe_allow_html=True)
-            st.write(f"売買期間平均：{tern_mean}")
-            st.write(f"売買期間：{tern}")
+            st.write("購入・売却履歴")
+            st.write(st.session_state.buy_log)
+            st.write(st.session_state.sell_log)
 
-            st.markdown('<p style="font-family:fantasy; color:salmon; font-size: 24px;">投資傾向</p>', unsafe_allow_html=True)
-            st.write(f"購入金額比率平均：{buy_rate_mean}")
-            st.write(f"投資傾向：{tendency}")
-            
-            st.markdown('<p style="font-family:fantasy; color:salmon; font-size: 24px;">取引量</p>', unsafe_allow_html=True)
-            #各統計量表示
-            st.dataframe(trade_value)
-            # ヒストグラムを作成
-            fig, ax = plt.subplots()
-            ax.hist(bdf2['取引量'][0], bins=10, color='blue', alpha=0.7, edgecolor='black')
-            ax.set_title('取引量のヒストグラム')
-            ax.set_xlabel('１取引あたりの購入金額')
-            ax.set_ylabel('count')
-            # Streamlitでヒストグラムを表示
-            st.pyplot(fig)
+            st.write("状況依存バイアス")
+            st.write(situational_bias_df)
 
-            st.markdown('<p style="font-family:fantasy; color:salmon; font-size: 24px;">運用成績</p>', unsafe_allow_html=True)
-            #各統計量表示
-            st.dataframe(wield_grades)
-            # ヒストグラムを作成
-            fig, ax = plt.subplots()
-            ax.hist(bdf['運用成績'][0], bins=10, color='blue', alpha=0.7, edgecolor='black')
-            ax.set_title('利益のヒストグラム')
-            ax.set_xlabel('利益')
-            ax.set_ylabel('count')
-            # Streamlitでヒストグラムを表示
-            st.pyplot(fig)
+            st.write("事後自己評価")
+            st.write(st.session_state.after_simulation_self_eval_df)
 
-            st.markdown('<p style="font-family:fantasy; color:salmon; font-size: 24px;">購入根拠</p>', unsafe_allow_html=True)
-            # 統計量を表示
-            col_b1, col_b2 = st.columns((4, 6))
-            with col_b1:
-                st.write("\n各カテゴリのカウント:")
-                st.write(buy_reason_count)
+            st.write("各バイアスの点数")
+            st.write(bias_score_df)
 
-                st.write("\n各カテゴリの割合:")
-                st.write(buy_reason_ratios)
-
-            with col_b2:
-                # 円グラフを作成
-                fig, ax = plt.subplots()
-                ax.pie(buy_reason_ratios, labels=buy_reason_ratios.index, autopct='%1.1f%%', startangle=90)
-                ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
-
-                # Streamlitに表示
-                st.pyplot(fig)
-
-
-            st.markdown('<p style="font-family:fantasy; color:salmon; font-size: 24px;">売却根拠</p>', unsafe_allow_html=True)
-            # 統計量を表示
-            col_s1, col_s2 = st.columns((4, 6))
-            with col_s1:
-                st.write("\n各カテゴリのカウント:")
-                st.write(sell_reason_count)
-
-                st.write("\n各カテゴリの割合:")
-                st.write(sell_reason_ratios)
-
-            with col_s2:
-                # 円グラフを作成
-                fig, ax = plt.subplots()
-                ax.pie(sell_reason_ratios, labels=sell_reason_ratios.index, autopct='%1.1f%%', startangle=90)
-                ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
-
-                # Streamlitに表示
-                st.pyplot(fig)
+            st.write("各バイアス分類の評価")
+            st.write(bias_categorize_df)
 
         st.write("################################################################################")
+        
+        st.subheader("各バイアス分類の評価")
+        ################################ レーダーチャートの作成 #####################################
+        categories = bias_categorize_df['バイアス分類'].tolist()
+        values = bias_categorize_df['平均点'].tolist()
 
-        st.markdown('<p style="font-family:fantasy; color:salmon; font-size: 24px;">行動経済学の指摘事項</p>', unsafe_allow_html=True)
-        # if "advice_temp" not in st.session_state:
-        #     st.session_state.advice_df_temp = advice(buy_reason_ratios, st.session_state.buy_log_temp, st.session_state.sell_log_temp)
-        #     st.session_state.advice_temp = True
+        # レーダーチャートを閉じるために先頭を末尾に追加
+        values += values[:1]
+        categories += categories[:1]
 
-        if st.session_state.advice_df_temp.empty:
-            st.write("特になし")
+        # Nを-1してラベルは閉じ用の最後の1点を除く
+        N = len(categories) - 1
+        angles = [n / float(N) * 2 * np.pi for n in range(len(categories))]
+
+        # プロット作成
+        fig = plt.figure(figsize=(3,3))
+        ax = plt.subplot(111, polar=True)
+        ax.set_theta_offset(np.pi / 2)
+        ax.set_theta_direction(-1)
+
+        # ラベルは最後の閉じ点を除く
+        plt.xticks(angles[:-1], categories[:-1])
+
+        # データプロット
+        ax.plot(angles, values, linewidth=1, linestyle='solid', label='スコア')
+        ax.fill(angles, values, 'skyblue', alpha=0.4)
+
+        # plt.title("バイアス分類ごとの平均点レーダーチャート", size=10, y=1.1)
+        plt.legend(loc='upper right', bbox_to_anchor=(0.1, 0.1))
+
+        # Streamlitで表示
+        st.pyplot(fig)
+        #############################################################################################
+
+        max_score = bias_categorize_df["平均点"].max()
+        top_biases = bias_categorize_df[bias_categorize_df["平均点"] == max_score]
+        categorize_bias = top_biases['バイアス分類'].values[0]
+
+        categorize_text = f"最も影響を受けているバイアス型は　<span style='font-size:30px'><span style='color:red'> {categorize_bias} </span> </span>です。"
+        st.markdown(categorize_text, unsafe_allow_html=True)
+        if categorize_bias == "状況依存型":
+            st.write("あなたは、状況や環境によって判断が左右されやすい傾向にあります。")
+            st.write("この認知バイアス型が強い人は、短期的な誘惑やプレッシャーで合理的判断が難しくなる傾向にありあmす。")
+        elif categorize_bias == "個人特性型":
+            st.write("あなたは、性格や感情傾向などの個人特性基づくバイアスに影響されやすい傾向にあります。")
+            st.write("この認知バイアス型は、比較的安定して現れるため、日常生活でも繰り返し観察されます。")
+        elif categorize_bias == "認知構造型":
+            st.write("あなたは、情報の処理や思考の仕組み自体に起因するバイアスに影響されやすい傾向にあります。")
+            st.write("この認知バイアス型は、論理的ではなく、判断のクセとして現れます。")
+        elif categorize_bias == "社会文化型":
+            st.write("あなたは、他者や社会的環境の影響で判断が偏る傾向にあります。")
+            st.write("この認知バイアス型では、社会的圧力や文化的価値観がバイアスを強めます。")
         else:
-            for i in range(0, len(st.session_state.advice_df_temp)):
-                # st.write(st.session_state.advice_df_temp['指摘事項'][i])
-                st.markdown(f'<p style="font-family:fantasy; color:green; font-size: 24px;">{st.session_state.advice_df_temp["指摘事項"][i]}</p>', unsafe_allow_html=True)
+            st.write("分類型の説明なし")
 
-                target_BE = st.session_state.Behavioral_Economics[st.session_state.Behavioral_Economics['理論']==st.session_state.advice_df_temp['指摘事項'][i]]
-                target_BE = target_BE.reset_index(drop=True)
-                st.write(target_BE['内容'][0])
-                # st.write("アドバイス")
-                st.write(f"　→ {target_BE['アドバイス'][0]}")
+        st.subheader("")
 
+        # 特に影響の強いバイアスのみを提示(バイアスの説明、日常生活で起こりうる判断の例)
+        st.subheader("影響を受けている認知バイアス")
 
-        st.write("_______________________________________________________________________________________________________")
-
-        st.subheader("各取引について")
-
-        # st.write("各種投資行動の説明を書く")
-
-        if "some_trade_advice_temp" not in st.session_state:
-            st.session_state.trade_advice_df_temp = some_trade_advice(st.session_state.buy_log_temp, st.session_state.sell_log_temp)  
-            st.session_state.some_trade_advice_temp = True
-
-
-        #trade_advice_dfからグラフを作成する
-        if st.session_state.trade_advice_df_temp.empty:
-            st.write("指摘することはありません。")
-        else:
-            st.write("あなたの売買データから以下のバイアスが見つかりました。")
-            for i in range(0,len(st.session_state.trade_advice_df_temp)):
-                tgt_name = st.session_state.trade_advice_df_temp.iloc[i]['企業名']
-                tgt_sell_day = st.session_state.sell_log_temp[st.session_state.sell_log_temp['企業名']==tgt_name]['年月'].iloc[-1]
-
-                tgt_buy_day = st.session_state.buy_log_temp[st.session_state.buy_log_temp['企業名']==tgt_name]['年月'].iloc[-1]
-
-                tgt_buy_day = dt.datetime.strptime(tgt_buy_day, "%Y/%m/%d")
-                tgt_sell_day = dt.datetime.strptime(tgt_sell_day, "%Y/%m/%d")
-
-                tgt_buy_day_temp = tgt_buy_day + dt.timedelta(days=-30)
-                tgt_sell_day_temp = tgt_sell_day + dt.timedelta(days=30)
-
-                index = st.session_state.c_master.loc[(st.session_state.c_master['企業名']==tgt_name)].index.values[0]
-                #companiesからデータを抽出する
-                target_company = st.session_state.loaded_companies[index]
-                name = target_company.name
-                rdf = target_company.rdf_all[tgt_buy_day_temp:tgt_sell_day_temp]
-
-                # st.write(st.session_state.trade_advice_df_temp.iloc[i]['指摘事項'])
-                st.markdown(f'<p style="font-family:fantasy; color:green; font-size: 24px;">{st.session_state.trade_advice_df_temp.iloc[i]["指摘事項"]}</p>', unsafe_allow_html=True)
-
-                target_BE2 = st.session_state.Behavioral_Economics[st.session_state.Behavioral_Economics['理論']==st.session_state.trade_advice_df_temp.iloc[i]['指摘事項']]
-                target_BE2 = target_BE2.reset_index(drop=True)
-                st.write(target_BE2['内容'][0])
-
-                if st.session_state.trade_advice_df_temp.iloc[i]['指摘事項'] == '現在志向バイアス':
-                    rdf_temp = rdf[tgt_sell_day:tgt_sell_day_temp]
-                    max_date = rdf_temp[rdf_temp['Close']==rdf_temp['Close'].max()].index.values[0]
-                    make_graph(name, rdf, buy_date=tgt_buy_day, sell_date=tgt_sell_day, now_kk_bool=True, max_date=max_date)
-                else:
-                    make_graph(name, rdf, buy_date=tgt_buy_day, sell_date=tgt_sell_day, now_kk_bool=True)
-
-                tgt_benef = st.session_state.sell_log_temp[st.session_state.sell_log_temp['企業名']==tgt_name]['利益'].iloc[-1]
-
-                if tgt_benef < 0:
-                    colored_text = f"利益：　<span style='font-size:20px'><span style='color:green'> {round(tgt_benef,1)}円</span> </span>"
-                    st.markdown(colored_text, unsafe_allow_html=True)
-                else:
-                    colored_text = f"利益：　<span style='font-size:20px'><span style='color:red'> +{round(tgt_benef,1)}円</span> </span>"
-                    st.markdown(colored_text, unsafe_allow_html=True)
-
-                html_code = f"""
-                <div style="
-                    border: 2px solid #000000;
-                    border-radius: 5px;
-                    padding: 10px;
-                ">
-                    {target_BE2['アドバイス'][0]}
-                </div>
-                """
-                st.markdown(html_code, unsafe_allow_html=True)
-                st.write("")
-
-        st.write("_______________________________________________________________________________________________________")
+        # 点数が高いバイアス3つを表示する
+        for i in range(0,3):
+            bias = bias_score_df_sorted["バイアス"][i]
+            st.markdown(f'<p style="font-family:fantasy; color:blue; font-size: 24px;">{bias}</p>', unsafe_allow_html=True)
+            bias_df = st.session_state.Behavioral_Economics[st.session_state.Behavioral_Economics["バイアス"]==bias]
+            st.write(bias_df["内容"].values[0])
+            st.write("【例】")
+            st.write(f"　　{bias_df['例'].values[0]}")
+            st.subheader("")
 
         st.button("戻る", key='uniq_key_6',on_click=lambda: change_page2(2))
 
@@ -2447,54 +2491,28 @@ else:
 
         # システムの満足度
         satisfaction_arrow = [
-            "満足している",
-            "まあまあ満足している",
-            "あまり満足していない",
-            "満足していない"
+            "全くそう思わない",
+            "あまりそう思わない",
+            "まあそう思う",
+            "非常にそう思う"
         ]
-        st.session_state.satisfaction = st.radio("１. このシステムに満足していますか。", satisfaction_arrow)
+        st.session_state.system_eval1 = st.radio("１. システムは使いやすかったですか。", satisfaction_arrow)
 
-        # システムの使いやすさ
-        satisfaction_arrow2 = [
-            "使いやすかった",
-            "使いにくかった"
-        ]
-        st.session_state.satisfaction2 = st.radio("２. システムは使いやすかったですか。", satisfaction_arrow2)
+        st.session_state.system_eval2 = st.radio("２. 指摘されたバイアスに共感しますか。", satisfaction_arrow)
 
-        st.session_state.satisfaction3 = st.text_input("３. システムのどの部分が使いやすかった、または使いにくかったですか。", value=st.session_state.get("satisfaction3", ""))
+        st.session_state.system_eval3 = st.radio("３. 提示された結果(バイアスの分類)は信頼できると思いますか。", satisfaction_arrow)
 
-        # システムの正確性(分類)に関して
-        accurate_classify_arrow = [
-            "合っている",
-            "部分的に合っている",
-            "合っていない"
-        ]
-        st.session_state.accurate_classify = st.radio("４. 投資行動型の分類は合っていると思いますか。", accurate_classify_arrow)
+        st.session_state.system_eval4 = st.radio("４. シミュレーションは現実的で没入しやすかったですか。", satisfaction_arrow)
 
-        # システムの正確性(行動経済学)に関して
-        accurate_instruction_arrow = [
-            "合っている",
-            "部分的に合っている",
-            "合っていない"
-        ]
-        st.session_state.accurate_instruction = st.radio("５. 行動経済学の指摘は合っていると思いますか。", accurate_instruction_arrow)
+        st.session_state.system_eval5 = st.radio("５. システムを通じて自分の意思決定の癖や弱点に気づきましたか。", satisfaction_arrow)
 
-        # システムの有用性に関して
-        usefulness_arrow1 = [
-            "参考になる",
-            "部分的に参考になる",
-            "参考にならない"
-        ]
-        st.session_state.usefulness1 = st.radio("６. このシステムのアドバイスは参考になりますか。", usefulness_arrow1)
+        st.session_state.system_eval6 = st.radio("６. このシステムは投資の学習や自己分析に役立つと思いますか。", satisfaction_arrow)
 
-        # システムの有用性に関して
-        usefulness_arrow2 = [
-            "思う",
-            "思わない"
-        ]
-        st.session_state.usefulness2 = st.radio("７. このシステムのアドバイスを今後役立てようと思いますか。", usefulness_arrow2)
+        st.session_state.system_eval7 = st.radio("７. このシステムを継続的に利用したいと思いますか。", satisfaction_arrow)
 
-        st.session_state.opinion = st.text_input("８. このシステムに関してご意見があればお聞かせください。", value=st.session_state.get("opinion", ""))
+        st.session_state.system_eval8 = st.radio("８. このシステムを誰かに薦めたいと思いますか。", satisfaction_arrow)
+
+        st.session_state.opinion = st.text_input("９. このシステムに関して改善点があれば教えてください。", value=st.session_state.get("opinion", ""))
 
         st.button("システムの評価を送る",on_click=insert_survey_to_db)
 
