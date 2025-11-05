@@ -2,7 +2,7 @@ import streamlit as st
 import random
 
 #　選択可能銘柄の最大表示数
-i_max = 20
+i_max = 10
 
 # 選択可能銘柄を選定する
 def create_chose_companies():
