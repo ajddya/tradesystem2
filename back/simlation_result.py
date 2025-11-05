@@ -2,7 +2,7 @@ import streamlit as st
 
 #シミュレーション結果を保存するクラス
 class Simulation_Results:
-    def __init__(self, dates, num, action_type, LEVEL, investment_result, buy_log, sell_log, Dividends, bias_class_port, pointed_out_bias, self_eval):
+    def __init__(self, dates, num, action_type, LEVEL, investment_result, buy_log, sell_log, Dividends, situational_bias, bias_class_port, pointed_out_bias, self_eval):
         self.dates = dates                             #実施日
         self.num = num                                 #実施回数
         self.action_type = action_type                 #行動型
@@ -11,7 +11,8 @@ class Simulation_Results:
         self.buy_log = buy_log                         #購入ログ
         self.sell_log = sell_log                       #売却ログ
         self.Dividends = Dividends                     #配当に関するデータ
-        self.bias_class_port = bias_class_port         #バイアス分類ポートフォリオ
+        self.situational_bias = situational_bias       #状況依存バイアス
+        self.bias_class_port = bias_class_port         #バイアス分類レーダーチャート
         self.pointed_out_bias = pointed_out_bias       #指摘したバイアス
         self.self_eval = self_eval                     #事後自己評価
         self._observers = []
@@ -29,11 +30,14 @@ class Simulation_Results:
         st.write("売却ログ:")
         st.write(self.sell_log)
 
-        st.write("全体のアドバイス:")
-        st.write(self.bias_class_port)
+        st.write("状況依存バイアス:")
+        st.write(self.situational_bias)
 
-        st.write("各取引のアドバイス:")
+        st.write("各バイアスのスコア:")
         st.write(self.pointed_out_bias)
+
+        st.write("バイアスの各分類のスコア:")
+        st.write(self.bias_class_port)
 
         st.write("事後自己評価:")
         st.write(self.self_eval)

@@ -35,6 +35,7 @@ def save_db():
     else:
         st.sidebar.write("データの保存に失敗しました。")
 
+debug_bool = False
 
 # データをデータベースに保存する
 def save_userdata():
@@ -43,7 +44,8 @@ def save_userdata():
     cursor = conn.cursor()
 
     # テーブルを削除
-    # cursor.execute("drop table personal_info")
+    if debug_bool:
+        cursor.execute("drop table personal_info")
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS personal_info (
@@ -76,19 +78,22 @@ def save_userdata():
         認知課題Q16 INTEGER,
         認知課題Q17 INTEGER,
         認知課題Q18 INTEGER,
-        認知課題Q19 INTEGER    )
+        認知課題Q19 INTEGER,
+        認知課題Q20 INTEGER,
+        認知課題Q21 INTEGER    )
     """)
 
     # データの挿入または更新
     for _, row in st.session_state.personal_df.iterrows():
         cursor.execute("""
-        INSERT OR REPLACE INTO personal_info (ユーザ名, ユーザID, 年齢, 性別, 投資経験の有無, 投資に関する知識の有無, 開放性, 誠実性, 外交性, 協調性, 神経症傾向, 認知課題Q1, 認知課題Q2, 認知課題Q3, 認知課題Q4, 認知課題Q5, 認知課題Q6, 認知課題Q7, 認知課題Q8, 認知課題Q9, 認知課題Q10, 認知課題Q11, 認知課題Q12, 認知課題Q13, 認知課題Q14, 認知課題Q15, 認知課題Q16, 認知課題Q17, 認知課題Q18, 認知課題Q19)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", (row["ユーザ名"], row["ユーザID"], row["年齢"], row["性別"], row["投資経験の有無"], row["投資に関する知識の有無"], row["開放性"], row["誠実性"], row["外交性"], row["協調性"], row["神経症傾向"], row["認知課題Q1"], row["認知課題Q2"], row["認知課題Q3"], row["認知課題Q4"], row["認知課題Q5"], row["認知課題Q6"], row["認知課題Q7"], row["認知課題Q8"], row["認知課題Q9"], row["認知課題Q10"], row["認知課題Q11"], row["認知課題Q12"], row["認知課題Q13"], row["認知課題Q14"], row["認知課題Q15"], row["認知課題Q16"], row["認知課題Q17"], row["認知課題Q18"], row["認知課題Q19"]))
+        INSERT OR REPLACE INTO personal_info (ユーザ名, ユーザID, 年齢, 性別, 投資経験の有無, 投資に関する知識の有無, 開放性, 誠実性, 外交性, 協調性, 神経症傾向, 認知課題Q1, 認知課題Q2, 認知課題Q3, 認知課題Q4, 認知課題Q5, 認知課題Q6, 認知課題Q7, 認知課題Q8, 認知課題Q9, 認知課題Q10, 認知課題Q11, 認知課題Q12, 認知課題Q13, 認知課題Q14, 認知課題Q15, 認知課題Q16, 認知課題Q17, 認知課題Q18, 認知課題Q19, 認知課題Q20, 認知課題Q21)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", (row["ユーザ名"], row["ユーザID"], row["年齢"], row["性別"], row["投資経験の有無"], row["投資に関する知識の有無"], row["開放性"], row["誠実性"], row["外交性"], row["協調性"], row["神経症傾向"], row["認知課題Q1"], row["認知課題Q2"], row["認知課題Q3"], row["認知課題Q4"], row["認知課題Q5"], row["認知課題Q6"], row["認知課題Q7"], row["認知課題Q8"], row["認知課題Q9"], row["認知課題Q10"], row["認知課題Q11"], row["認知課題Q12"], row["認知課題Q13"], row["認知課題Q14"], row["認知課題Q15"], row["認知課題Q16"], row["認知課題Q17"], row["認知課題Q18"], row["認知課題Q19"], row["認知課題Q20"], row["認知課題Q21"]))
     
     # # result __________________________________________________________________________________________________________
 
     # テーブルを削除
-    # cursor.execute("drop table simulation_results")
+    if debug_bool:
+        cursor.execute("drop table simulation_results")
 
     # テーブルの作成
     cursor.execute("""
@@ -143,7 +148,8 @@ def save_userdata():
     df_binary = pickle.dumps(save_values_df)
 
     # テーブルを削除
-    # cursor.execute("drop table value_table")
+    if debug_bool:
+        cursor.execute("drop table value_table")
 
     # テーブルの作成
     cursor.execute("""
@@ -174,7 +180,8 @@ def insert_data_to_db(private_data, result_data):
     c = conn.cursor()
 
     # テーブルの削除
-    # c.execute("drop table user_data")
+    if debug_bool:
+        c.execute("drop table user_data")
 
     # テーブルの作成（初回のみ）
     c.execute('CREATE TABLE IF NOT EXISTS user_data(result_data)')
@@ -202,28 +209,30 @@ def insert_survey_to_db():
     cursor = conn.cursor()
 
     # テーブルを削除
-    # cursor.execute("drop table survey_info")
+    if debug_bool:
+        cursor.execute("drop table survey_info")
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS survey_info (
         ユーザ名 TEXT,
         ユーザID TEXT,
         実施回数 INTEGER,
-        システムの満足度1 TEXT,
-        システムの満足度2 TEXT,
-        システムの満足度3 TEXT,
-        システムの正確性1 TEXT,
-        システムの正確性2 TEXT,
-        システムの有用性1 TEXT,
-        システムの有用性2 TEXT,
+        システム評価1 TEXT,
+        システム評価2 TEXT,
+        システム評価3 TEXT,
+        システム評価4 TEXT,
+        システム評価5 TEXT,
+        システム評価6 TEXT,
+        システム評価7 TEXT,
+        システム評価8 TEXT,
         意見 TEXT
     )
     """)
 
     # データの挿入または更新
     cursor.execute("""
-    INSERT INTO survey_info (ユーザ名, ユーザID, 実施回数, システムの満足度1, システムの満足度2, システムの満足度3, システムの正確性1, システムの正確性2, システムの有用性1, システムの有用性2, 意見)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", (st.session_state.acount_name, st.session_state.acount_ID, st.session_state.num - 1, st.session_state.satisfaction, st.session_state.satisfaction2, st.session_state.satisfaction3, st.session_state.accurate_classify, st.session_state.accurate_instruction, st.session_state.usefulness1, st.session_state.usefulness2, st.session_state.opinion))
+    INSERT INTO survey_info (ユーザ名, ユーザID, 実施回数, システム評価1, システム評価2, システム評価3, システム評価4, システム評価5, システム評価6, システム評価7, システム評価8, 意見)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", (st.session_state.acount_name, st.session_state.acount_ID, st.session_state.num - 1, st.session_state.system_eval1, st.session_state.system_eval2, st.session_state.system_eval3, st.session_state.system_eval4, st.session_state.system_eval5, st.session_state.system_eval6, st.session_state.system_eval7, st.session_state.system_eval8, st.session_state.opinion))
 
     # データベースの変更をコミット
     conn.commit()

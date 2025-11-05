@@ -15,6 +15,17 @@ def buy(name, rdf_all):
     possess_KK_num = 0
     possess_KK_avg = 0
     benefit = 0
+
+    index = st.session_state.c_master[st.session_state.c_master['企業名'] == name].index.values[0]
+
+    # 専門家予想の数値
+    spe_patarn_number = st.session_state.c_master['専門家予想'][index]
+
+    # みんなの予想の数値
+    evr_patarn_number = st.session_state.c_master['みんなの予想'][index]
+
+    # 購入根拠
+    Rationale_for_purchase = "指定なし"
     
     #最新のrdfの株価を取得
     now_data_KK = rdf_all['Close'][st.session_state.now]
@@ -31,6 +42,22 @@ def buy(name, rdf_all):
         if name in st.session_state.possess_KK_df['企業名'].values:
             possess_KK_num = st.session_state.possess_KK_df[st.session_state.possess_KK_df['企業名']==name]['保有株式数'].values[0]
             possess_KK_avg = st.session_state.possess_KK_df[st.session_state.possess_KK_df['企業名']==name]['1株あたりの株価'].values[0]
+
+        # 購入前の利益を計算
+        pre_benefit = (now_data_KK - possess_KK_avg) * possess_KK_num
+
+        # 購入前の総資産を計算
+        possess_money = st.session_state.possess_money
+        if st.session_state.possess_KK_df.empty == False:
+            for i in range(0,len(st.session_state.possess_KK_df)):
+                    possess_money += st.session_state.possess_KK_df['現在の株価'][i] * st.session_state.possess_KK_df['保有株式数'][i]
+
+        # 購入前の評価損益を計算
+        if st.session_state.possess_KK_df.empty == False:
+            eval_benefit = st.session_state.possess_KK_df["利益"].sum()
+            if eval_benefit < 0:
+                Rationale_for_purchase = "含み損中買い"
+
         
         #1株あたりの株価を算出
         possess_KK_num_one = possess_KK_num / 100
@@ -42,6 +69,7 @@ def buy(name, rdf_all):
         #この銘柄の合計金額を変数に格納
         # possess_KK = possess_KK_avg * possess_KK_num
     
+        # 購入後の利益を計算
         benefit = (now_data_KK - possess_KK_avg) * possess_KK_num
     
         #保有株式のデータベース作成
@@ -50,6 +78,8 @@ def buy(name, rdf_all):
             st.session_state.possess_KK_df['保有株式数'] = st.session_state.possess_KK_df['保有株式数'].mask(st.session_state.possess_KK_df['企業名']==name,[possess_KK_num])
             # st.session_state.possess_KK_df['現在の株価'] = [now_data_KK]
             # st.session_state.possess_KK_df['利益'] = [benefit]
+            if pre_benefit < 0:
+                Rationale_for_purchase = "ナンピン買い"
         else:
             possess_KK_df_temp = pd.DataFrame(columns=['企業名', '保有株式数', '現在の株価', '1株あたりの株価', '利益',])
             possess_KK_df_temp['企業名'] = [name]
@@ -62,17 +92,20 @@ def buy(name, rdf_all):
         buy_now_str = st.session_state.now.strftime('%Y/%m/%d')
             
         #データログにデータを追加
-        buy_log_temp = pd.DataFrame(columns=['企業名', '年月', '購入根拠', '購入株式数', '購入金額', '購入金額比率', '当日のボラティリティ', '当日のボラティリティ平均', '属性'])
+        buy_log_temp = pd.DataFrame(columns=['企業名', '年月', '購入根拠', '購入株式数', '購入金額', '購入金額比率', '購入時総資産', '当日のボラティリティ', '当日のボラティリティ平均', '専門家予想', 'みんなの予想', '属性'])
         buy_log_temp['企業名'] = [name]
         buy_log_temp['年月'] = [buy_now_str]
-        buy_log_temp['購入根拠'] = [st.session_state.Rationale_for_purchase]
+        buy_log_temp['購入根拠'] = [Rationale_for_purchase]
         buy_log_temp['購入株式数'] = [st.session_state.buy_num ]
         buy_amount = now_data_KK * st.session_state.buy_num
         buy_log_temp['購入金額'] = [buy_amount]
         buy_amount_rate = buy_amount / st.session_state.possess_money
         buy_log_temp['購入金額比率'] = [round(buy_amount_rate, 2)]
+        buy_log_temp['購入時総資産'] = [possess_money]
         buy_log_temp['当日のボラティリティ'] = [VOL_cal(name, st.session_state.now)]
         buy_log_temp['当日のボラティリティ平均'] = [VOL_all(st.session_state.now) ]
+        buy_log_temp['専門家予想'] = [spe_patarn_number]
+        buy_log_temp['みんなの予想'] = [evr_patarn_number]
         buy_log_temp['属性'] = ['買い']
         st.session_state.buy_log = pd.concat([st.session_state.buy_log,buy_log_temp],ignore_index=True)
     
@@ -115,11 +148,14 @@ def sell(name, rdf_all):
             st.session_state.possess_KK_df = st.session_state.possess_KK_df.reset_index(drop=True)
             
             sell_now_str = st.session_state.now.strftime('%Y/%m/%d')
+
+            # 売却根拠
+            basis_for_sale = "指定なし"
                     
             sell_log_temp = pd.DataFrame(columns=['企業名', '年月', '売却根拠', '売却株式数', '売却金額', '利益', '当日のボラティリティ', '当日のボラティリティ平均','属性'])
             sell_log_temp['企業名'] = [name]
             sell_log_temp['年月'] = [sell_now_str]
-            sell_log_temp['売却根拠'] = [st.session_state.basis_for_sale]
+            sell_log_temp['売却根拠'] = [basis_for_sale]
             sell_log_temp['売却株式数'] = [st.session_state.sell_num]
             sell_amount = now_data_KK * st.session_state.sell_num
             sell_log_temp['売却金額'] = [sell_amount]

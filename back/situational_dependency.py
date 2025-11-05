@@ -4,7 +4,7 @@ import datetime as dt
 
 
 
-# 各取引のアドバイス生成
+# 売買履歴から状況依存バイアスの影響判定をする
 def situational_dependency(buy_log, sell_log):
     situational_bias_df = pd.DataFrame(columns=['企業名', '指摘バイアス', '指摘銘柄数', '影響率'])
     situational_bias_df_temp = pd.DataFrame(columns=['企業名', '指摘バイアス', '指摘銘柄数', '影響率'])
@@ -54,6 +54,18 @@ def situational_dependency(buy_log, sell_log):
         situational_bias_df_temp['指摘銘柄数'] = [len(minas_seqence_df)]
         situational_bias_df_temp['影響率'] = [len(minas_seqence_df) / len(sell_log)]
         situational_bias_df = pd.concat([situational_bias_df,situational_bias_df_temp], ignore_index=True)
+
+    # 損失回避傾向２　　購入金額比率が低く安定している    
+    low_buy_rate_df = buy_log[buy_log["購入金額比率"] <= 0.4].copy()
+
+      # 全購入履歴のうち購入金額比率が低いものが75%以上なら影響ありと判定
+    if len(low_buy_rate_df) / len(buy_log) >= 0.75:
+        situational_bias_df_temp['企業名'] = ["指定なし"]
+        situational_bias_df_temp['指摘バイアス'] = ['損失回避傾向2']
+        situational_bias_df_temp['指摘銘柄数'] = ["指定なし"]
+        situational_bias_df_temp['影響率'] = ["指定なし"]
+        situational_bias_df = pd.concat([situational_bias_df,situational_bias_df_temp], ignore_index=True)
+
         
     #現在志向バイアス　　売った後１ヶ月以内に最大値があるなら指摘
     pluss_benef_df = sell_log[sell_log['利益'] > 0]
@@ -82,10 +94,47 @@ def situational_dependency(buy_log, sell_log):
         
     if present_oriented_df.empty == False:
         situational_bias_df_temp['企業名'] = [present_oriented_df.iloc[0]['企業名']]
-        situational_bias_df_temp['指摘バイアス'] = ['現在志向バイアス']
+        situational_bias_df_temp['指摘バイアス'] = ['現在思考バイアス']
         situational_bias_df_temp['指摘銘柄数'] = [len(present_oriented_df)]
         situational_bias_df_temp['影響率'] = [len(present_oriented_df) / len(sell_log)]
         situational_bias_df = pd.concat([situational_bias_df,situational_bias_df_temp], ignore_index=True)
+
+    # 現在思考バイアス　　平均保有期間が短い
+    #######################################################################################################
+    buy_log_temp = buy_log.copy()
+    buy_log_temp['年月'] = pd.to_datetime(buy_log_temp['年月'], format="%Y/%m/%d")
+    trade_time_list = []
+
+    for i in range(0,len(sell_log)):
+        sell_day = sell_log.iloc[i]['年月']
+        sell_day = dt.datetime.strptime(sell_day, "%Y/%m/%d")
+        sell_com_name = sell_log.iloc[i]['企業名']
+        # 売却日以前の購入履歴のうち、同じ企業のデータを抽出
+        buy_log_temp_temp = buy_log_temp[(buy_log_temp["年月"] <= sell_day) & (buy_log_temp["企業名"] == sell_com_name)]
+        # 対象データが存在する場合のみ処理
+        if not buy_log_temp_temp.empty:
+            # 最も直近の購入日（最大の年月）
+            buy_day = buy_log_temp_temp["年月"].max()
+            # 売却日 - 購入日 の差（日数）を計算
+            delta_trade_time = (sell_day - buy_day).days  # → int（日数）に変換
+            trade_time_list.append(delta_trade_time)
+
+    # --- 平均保有期間を計算 ---
+    if len(trade_time_list) > 0:
+        trade_time_list_ave = sum(trade_time_list) / len(trade_time_list)
+    else:
+        trade_time_list_ave = None
+
+    # 平均保有期間が7日以下なら影響ありと判定
+    if trade_time_list_ave <= 7:
+        situational_bias_df_temp['企業名'] = ["指定なし"]
+        situational_bias_df_temp['指摘バイアス'] = ['現在思考バイアス2']
+        situational_bias_df_temp['指摘銘柄数'] = ["指定なし"]
+        situational_bias_df_temp['影響率'] = ["指定なし"]
+        situational_bias_df = pd.concat([situational_bias_df,situational_bias_df_temp], ignore_index=True)
+
+    #######################################################################################################
+
 
     # 近視眼的思考　　売却する１週間以内に大きな株価変動があった
     foresight_df = pd.DataFrame()
@@ -122,60 +171,66 @@ def situational_dependency(buy_log, sell_log):
         situational_bias_df_temp['影響率'] = [len(foresight_df) / len(sell_log)]
         situational_bias_df = pd.concat([situational_bias_df,situational_bias_df_temp], ignore_index=True)
 
+    # 近視眼的思考２　　頻繁な取引
+    number_of_trade_limit = 10
+    if len(sell_log) > number_of_trade_limit:
+        situational_bias_df_temp['企業名'] = ["指定なし"]
+        situational_bias_df_temp['指摘バイアス'] = ['近視眼的思考2']
+        situational_bias_df_temp['指摘銘柄数'] = ["指定なし"]
+        situational_bias_df_temp['影響率'] = ["指定なし"]
+        situational_bias_df = pd.concat([situational_bias_df,situational_bias_df_temp], ignore_index=True)
     
     #ブレークイーブン効果　　損失が出でいる株価に買い増しをしている
     BE_effect_df = pd.DataFrame()
 
-    sell_log_temp_2 = sell_log.copy()
-    # sell_log の '年月' 列を datetime 型に変換
-    sell_log_temp_2['年月'] = pd.to_datetime(sell_log_temp_2['年月'], format="%Y/%m/%d")
-
-        # 購入時、すでにその株を持っているか確認
-        # buy_dfのうち、シミュレーション開始からnowまでの購入履歴を参照
-    for i in range(1, len(buy_log)):
-        buy_day = buy_log.iloc[i]['年月']
-        buy_day = dt.datetime.strptime(buy_day, "%Y/%m/%d")
-        buy_com_name = buy_log.iloc[i]['企業名']
-        # 購入前の購入履歴を確認
-        for j in range(0, i):
-            buy_com_name_temp = buy_log.iloc[j]['企業名']
-            # 購入銘柄と同じ銘柄があるか確認
-            if buy_com_name == buy_com_name_temp:
-                buy_day_temp = buy_log.iloc[j]['年月']
-                buy_day_temp = dt.datetime.strptime(buy_day_temp, "%Y/%m/%d")
-
-                # buy_day_temp ～ buy_day の範囲に含まれるデータを抽出
-                mask = (sell_log_temp_2['年月'] >= buy_day_temp) & (sell_log_temp_2['年月'] <= buy_day)
-                sell_period_df = sell_log.loc[mask].copy()
-                # sell_log の中に buy_day_temp ~ buy_day 以内に売却されていないかを確認
-                if buy_com_name in sell_period_df['企業名']:
-                    break
-                else:
-                    # 保有株がマイナスかどうか確認する
-                    # 過去購入時の株価取得
-                    index2 = st.session_state.c_master.loc[(st.session_state.c_master['企業名']==buy_com_name_temp)].index.values[0]
-                    buy_day_KK_temp = st.session_state.loaded_companies[index2].rdf_all[buy_day_temp : buy_day_temp]
-                    # buy_dayの株価を取得
-                    buy_day_KK_temp = buy_day_KK_temp['Close'].iloc[0]
-
-                    # 新購入時の株価を取得
-                    index = st.session_state.c_master.loc[(st.session_state.c_master['企業名']==buy_com_name)].index.values[0]
-                    buy_day_KK = st.session_state.loaded_companies[index].rdf_all[buy_day : buy_day]
-                    # buy_dayの株価を取得
-                    buy_day_KK = buy_day_KK['Close'].iloc[0]
-
-                    # 過去購入時の株価より新購入時の株価が低い場合影響を受けていると判定
-                    if buy_day_KK_temp > buy_day_KK:
-                        # 1つの行をDataFrameとして連結する
-                        temp_df = pd.DataFrame(buy_log.iloc[i]).transpose()
-                        BE_effect_df = pd.concat([BE_effect_df, temp_df], ignore_index=True)
+    for i in range(0,len(buy_log)):
+        if buy_log.iloc[i]["購入根拠"] == "ナンピン買い":
+            temp_df = pd.DataFrame(buy_log.iloc[i]).transpose()
+            BE_effect_df = pd.concat([BE_effect_df, temp_df], ignore_index=True)
 
 
     if BE_effect_df.empty == False:
         situational_bias_df_temp['企業名'] = [BE_effect_df.iloc[0]['企業名']]
         situational_bias_df_temp['指摘バイアス'] = ['ブレークイーブン効果']
         situational_bias_df_temp['指摘銘柄数'] = [len(BE_effect_df)]
-        situational_bias_df_temp['影響率'] = [len(BE_effect_df) / len(sell_log)]
+        situational_bias_df_temp['影響率'] = [len(BE_effect_df) / len(buy_log)]
+        situational_bias_df = pd.concat([situational_bias_df,situational_bias_df_temp], ignore_index=True)
+
+    #ブレークイーブン効果２　　株価損失時の購入金額比率が増加
+        # 「購入根拠」が「ナンピン買い」または「含み損中買い」の行を抽出
+    loss_buy_mask = buy_log["購入根拠"].isin(["ナンピン買い", "含み損中買い"])
+
+        # 含み損中買い時（ナンピン買い含む）の平均購入金額比率
+    loss_buy_ratio = buy_log.loc[loss_buy_mask, "購入金額比率"].mean()
+
+        # 通常時（それ以外）の平均購入金額比率
+    normal_buy_ratio = buy_log.loc[~loss_buy_mask, "購入金額比率"].mean()   
+
+    if  loss_buy_ratio > normal_buy_ratio:
+        situational_bias_df_temp['企業名'] = ["指定なし"]
+        situational_bias_df_temp['指摘バイアス'] = ['ブレークイーブン効果2']
+        situational_bias_df_temp['指摘銘柄数'] = ["指定なし"]
+        situational_bias_df_temp['影響率'] = ["指定なし"]
+        situational_bias_df = pd.concat([situational_bias_df,situational_bias_df_temp], ignore_index=True)
+
+    # 権威バイアス
+    specialist_ave = buy_log["専門家予想"].mean()
+
+    if specialist_ave <= 4:
+        situational_bias_df_temp['企業名'] = ["指定なし"]
+        situational_bias_df_temp['指摘バイアス'] = ['権威バイアス']
+        situational_bias_df_temp['指摘銘柄数'] = ["指定なし"]
+        situational_bias_df_temp['影響率'] = ["指定なし"]
+        situational_bias_df = pd.concat([situational_bias_df,situational_bias_df_temp], ignore_index=True)
+
+    # 同調バイアス
+    everyone_ave = buy_log["みんなの予想"].mean()
+
+    if everyone_ave <= 4:
+        situational_bias_df_temp['企業名'] = ["指定なし"]
+        situational_bias_df_temp['指摘バイアス'] = ['同調バイアス']
+        situational_bias_df_temp['指摘銘柄数'] = ["指定なし"]
+        situational_bias_df_temp['影響率'] = ["指定なし"]
         situational_bias_df = pd.concat([situational_bias_df,situational_bias_df_temp], ignore_index=True)
 
     return situational_bias_df
