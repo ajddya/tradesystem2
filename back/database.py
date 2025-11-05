@@ -35,7 +35,7 @@ def save_db():
     else:
         st.sidebar.write("データの保存に失敗しました。")
 
-debug_bool = False
+debug_bool = True
 
 # データをデータベースに保存する
 def save_userdata():
