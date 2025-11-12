@@ -10,6 +10,7 @@ import japanize_matplotlib
 import matplotlib.pyplot as plt
 import sqlite3
 import uuid
+import plotly.graph_objects as go
 
 # 各種関数ファイルのインポート
 from back.simlation_result import Simulation_Results
@@ -1598,9 +1599,26 @@ if st.session_state.show_page:
 
     st.sidebar.button("一日進める", key='uniq_key_1',on_click=lambda: add_next_day(1))
     st.sidebar.button("一週間進める", key='uniq_key_2', on_click=lambda: add_next_day(7))
-    st.sidebar.write(f"now = {st.session_state.now}")
-    st.sidebar.write(f"end = {st.session_state.all_range_end}")
+    ################################################################################################# 
+    start = dt.datetime(2021,1,4)   
+    end = st.session_state.all_range_end
+    all_date = end - start
+    delta_date = st.session_state.now - start
+    rate = (delta_date / all_date) * 100
 
+    st.sidebar.write(f"now = {st.session_state.now.strftime('%Y/%m/%d')}")
+    st.sidebar.write(f"end = {st.session_state.all_range_end.strftime('%Y/%m/%d')}")
+
+    fig = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=round(rate,1),
+        title={'text': "シミュレーション進捗"},
+        gauge={'axis': {'range': [0, 100]}}
+    ))
+    fig.update_layout(width=300, height=250)
+    st.sidebar.plotly_chart(fig)
+    
+    #################################################################################################
     st.sidebar.header(f"買付余力：{round(st.session_state.possess_money)} 円")
     if st.session_state.possess_KK_df.empty == True:
         st.sidebar.write("あなたは現在株を所有していません。") 
