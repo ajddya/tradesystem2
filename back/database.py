@@ -225,14 +225,23 @@ def insert_survey_to_db():
         システム評価6 TEXT,
         システム評価7 TEXT,
         システム評価8 TEXT,
+        システム評価9 INTEGER,
+        システム評価10 INTEGER,
+        システム評価11 TEXT,
+        システム評価12 TEXT,
+        システム評価13 TEXT,
+        システム評価14 TEXT,
+        システム評価15 TEXT,
+        システム評価16 TEXT,
+        システム評価17 TEXT,
         意見 TEXT
     )
     """)
 
     # データの挿入または更新
     cursor.execute("""
-    INSERT INTO survey_info (ユーザ名, ユーザID, 実施回数, システム評価1, システム評価2, システム評価3, システム評価4, システム評価5, システム評価6, システム評価7, システム評価8, 意見)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", (st.session_state.acount_name, st.session_state.acount_ID, st.session_state.num - 1, st.session_state.system_eval1, st.session_state.system_eval2, st.session_state.system_eval3, st.session_state.system_eval4, st.session_state.system_eval5, st.session_state.system_eval6, st.session_state.system_eval7, st.session_state.system_eval8, st.session_state.opinion))
+    INSERT INTO survey_info (ユーザ名, ユーザID, 実施回数, システム評価1, システム評価2, システム評価3, システム評価4, システム評価5, システム評価6, システム評価7, システム評価8, システム評価9, システム評価10, システム評価11, システム評価12, システム評価13, システム評価14, システム評価15, システム評価16, システム評価17, 意見)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", (st.session_state.acount_name, st.session_state.acount_ID, st.session_state.num - 1, st.session_state.system_eval1, st.session_state.system_eval2, st.session_state.system_eval3, st.session_state.system_eval4, st.session_state.system_eval5, st.session_state.system_eval6, st.session_state.system_eval7, st.session_state.system_eval8, st.session_state.system_eval9, st.session_state.system_eval10, st.session_state.system_eval11, st.session_state.system_eval12, st.session_state.system_eval13, st.session_state.system_eval14, st.session_state.system_eval15, st.session_state.system_eval16, st.session_state.system_eval17, st.session_state.opinion))
 
     # データベースの変更をコミット
     conn.commit()
