@@ -1263,7 +1263,7 @@ if st.session_state.show_page:
         st.write("################################################################################")
         
         ################################ 個人特性型のバイアスから投資行動パターンを提示 #####################################
-        st.subheader("あなたの投資行動型")
+        st.subheader("あなたの行動傾向")
 
         # 個人特性型バイアスのうち最大のものを持ってくる
         mask = bias_score_df["バイアス"].isin(["現状維持バイアス", "楽観性バイアス", "自信過剰"])
@@ -1350,7 +1350,7 @@ if st.session_state.show_page:
         st.markdown(categorize_text, unsafe_allow_html=True)
         if categorize_bias == "状況依存型":
             st.write("あなたは、状況や環境によって判断が左右されやすい傾向にあります。")
-            st.write("この認知バイアス型が強い人は、短期的な誘惑やプレッシャーで合理的判断が難しくなる傾向にありあmす。")
+            st.write("この認知バイアス型が強い人は、短期的な誘惑やプレッシャーで合理的判断が難しくなる傾向にあります。")
         elif categorize_bias == "個人特性型":
             st.write("あなたは、性格や感情傾向などの個人特性基づくバイアスに影響されやすい傾向にあります。")
             st.write("この認知バイアス型は、比較的安定して現れるため、日常生活でも繰り返し観察されます。")
@@ -1427,10 +1427,10 @@ if st.session_state.show_page:
 
 
         if st.button(" シミュレーションを終了する "):
-            if st.session_state.survey_bool==False:
-                change_page2(7)
-            
+            # if st.session_state.survey_bool==False:
+            change_page2(1)            
             st.session_state.show_page = False
+            st.rerun()
 
     # 購入画面
     def page6():
@@ -1734,8 +1734,7 @@ else:
 
             st.write("########################################################################################")
 
-        # if "advice_temp" in st.session_state:
-        #     del st.session_state.advice_temp
+        st.sidebar.button('システム評価アンケート',on_click=lambda: change_page2(7))
 
         if "some_trade_advice_temp" in st.session_state:
             del st.session_state.some_trade_advice_temp
@@ -2514,25 +2513,45 @@ else:
             "まあそう思う",
             "非常にそう思う"
         ]
-        st.session_state.system_eval1 = st.radio("１. システムは使いやすかったですか。", satisfaction_arrow)
+        st.session_state.system_eval1 = st.radio("１. 表示された結果は理解しやすかった。", satisfaction_arrow)
 
-        st.session_state.system_eval2 = st.radio("２. 指摘されたバイアスに共感しますか。", satisfaction_arrow)
+        st.session_state.system_eval2 = st.radio("２. このシステムはシンプルで使いやすい。", satisfaction_arrow)
 
-        st.session_state.system_eval3 = st.radio("３. 提示された結果(バイアスの分類)は信頼できると思いますか。", satisfaction_arrow)
+        st.session_state.system_eval3 = st.radio("３. ほとんどの人がこのシステムをすぐに習得できると思う。", satisfaction_arrow)
 
-        st.session_state.system_eval4 = st.radio("４. シミュレーションは現実的で没入しやすかったですか。", satisfaction_arrow)
+        st.session_state.system_eval4 = st.radio("４. このシステムは時間がかかると思う。", satisfaction_arrow)
 
-        st.session_state.system_eval5 = st.radio("５. システムを通じて自分の意思決定の癖や弱点に気づきましたか。", satisfaction_arrow)
+        st.session_state.system_eval5 = st.radio("５. このシステムを使っていると自信が持てる。", satisfaction_arrow)
 
-        st.session_state.system_eval6 = st.radio("６. このシステムは投資の学習や自己分析に役立つと思いますか。", satisfaction_arrow)
+        st.session_state.system_eval6 = st.radio("６. 結果表示が自分に合っていると感じた。", satisfaction_arrow)
 
-        st.session_state.system_eval7 = st.radio("７. このシステムを継続的に利用したいと思いますか。", satisfaction_arrow)
+        st.session_state.system_eval7 = st.radio("７. 提示された結果（ 行動傾向やバイアス分類）は信頼できると思う。", satisfaction_arrow)
 
-        st.session_state.system_eval8 = st.radio("８. このシステムを誰かに薦めたいと思いますか。", satisfaction_arrow)
+        st.session_state.system_eval8 = st.radio("８. シミュレーションは現実的で没入しやすかった。", satisfaction_arrow)
 
-        st.session_state.opinion = st.text_input("９. このシステムに関して改善点があれば教えてください。", value=st.session_state.get("opinion", ""))
+        st.session_state.system_eval9 = st.slider("９. 指摘されたバイアスの共感度はどれくらいですか。", 1, 10, st.session_state.get("system_eval9", 1))
+
+        st.session_state.system_eval10 = st.slider("10. 指摘内容の納得度はどれくらいですか。", 1, 10, st.session_state.get("system_eval10", 1))
+
+        st.session_state.system_eval11 = st.text_input("11. どうして共感度、納得度そのような点数をつけましたか。", value=st.session_state.get("system_eval11", ""))
+
+        st.session_state.system_eval12 = st.radio("12. システムを通じて、自分の意思決定の癖や弱点に気づいた。", satisfaction_arrow)
+
+        st.session_state.system_eval13 = st.radio("13. このシステムは投資の学習や自己分析に役立つと思う。", satisfaction_arrow)
+
+        st.session_state.system_eval14 = st.radio("14. システムを利用して自分の判断の偏りを意識するようになった。", satisfaction_arrow)
+
+        st.session_state.system_eval15 = st.radio("15. システムの結果を見て自分の行動を変えようと思った。", satisfaction_arrow)
+
+        st.session_state.system_eval16 = st.radio("16. このシステムを継続的に利用したいと思う。", satisfaction_arrow)
+
+        st.session_state.system_eval17 = st.radio("17. このシステムを誰かに薦めたいと思う。", satisfaction_arrow)
+
+        st.session_state.opinion = st.text_input("18. このシステムに関して改善点があれば教えてください。", value=st.session_state.get("opinion", ""))
 
         st.button("システムの評価を送る",on_click=insert_survey_to_db)
+        st.write("_______________________________________________________________________________________________________")
+        st.button('戻る',on_click=lambda: change_page2(2))
 
     # データベースの確認
     def page2_99():
