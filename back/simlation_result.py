@@ -21,23 +21,38 @@ class Simulation_Results:
         # ここに、このクラスのデータを表示するためのコードを追加できます
         st.write(f"実施日: {self.dates}")
         st.write(f"レベル：{self.LEVEL}")
-        st.write(f"分類型: {self.action_type}")
+        st.write(f"行動傾向: {self.action_type}")
         st.write(f"利益: {self.investment_result}") 
 
-        st.write("購入ログ:")
-        st.write(self.buy_log)
+        check = st.checkbox("投資行動の情報を表示", value = False)
+        if check:
+            st.write("購入ログ:")
+            st.write(self.buy_log)
 
-        st.write("売却ログ:")
-        st.write(self.sell_log)
+            st.write("売却ログ:")
+            st.write(self.sell_log)
 
-        st.write("状況依存バイアス:")
-        st.write(self.situational_bias)
+            st.write("状況依存バイアス:")
+            st.write(self.situational_bias)
 
-        st.write("各バイアスのスコア:")
-        st.write(self.pointed_out_bias)
+            st.write("各バイアスのスコア:")
+            st.write(self.pointed_out_bias)
+
+            st.write("事後自己評価:")
+            st.write(self.self_eval)
+
+        st.write("")
 
         st.write("バイアスの各分類のスコア:")
         st.write(self.bias_class_port)
 
-        st.write("事後自己評価:")
-        st.write(self.self_eval)
+        # 平均点が高い順（降順）に並び替え
+        bias_score_df_sorted = self.pointed_out_bias.sort_values(by="点数", ascending=False).reset_index(drop=True)
+
+
+        st.write("指摘バイアス")
+        for i in range(0,3):
+            bias = bias_score_df_sorted["バイアス"][i]
+            st.markdown(f'<p style="font-family:fantasy; color:blue; font-size: 24px;">・{bias}</p>', unsafe_allow_html=True)
+
+

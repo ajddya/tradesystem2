@@ -56,7 +56,7 @@ def situational_dependency(buy_log, sell_log):
         situational_bias_df = pd.concat([situational_bias_df,situational_bias_df_temp], ignore_index=True)
 
     # 損失回避傾向２　　購入金額比率が低く安定している    
-    low_buy_rate_df = buy_log[buy_log["購入金額比率"] <= 0.4].copy()
+    low_buy_rate_df = buy_log[buy_log["購入金額比率"] <= 0.3].copy()
 
       # 全購入履歴のうち購入金額比率が低いものが75%以上なら影響ありと判定
     if len(low_buy_rate_df) / len(buy_log) >= 0.75:
@@ -67,7 +67,7 @@ def situational_dependency(buy_log, sell_log):
         situational_bias_df = pd.concat([situational_bias_df,situational_bias_df_temp], ignore_index=True)
 
         
-    #現在志向バイアス　　売った後１ヶ月以内に最大値があるなら指摘
+    #現在志向バイアス　　売った後１ヶ月以内に一株あたり得た利益以上の株価上昇があるなら指摘
     pluss_benef_df = sell_log[sell_log['利益'] > 0]
     pluss_benef_df = pluss_benef_df.reset_index(drop=True)
 
