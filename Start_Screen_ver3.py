@@ -1286,22 +1286,26 @@ if st.session_state.show_page:
 
         # 現状維持バイアス、楽観性バイアス（悲観性バイアス）、自信過剰で投資行動型を表示
         if max_parsonal_bias == "現状維持バイアス":
-            categorize_text = f"<span style='font-size:30px'><span style='color:red'> 変化を極力避けるタイプ </span> </span>"
+            action_type = "変化を極力避けるタイプ"
+            categorize_text = f"<span style='font-size:30px'><span style='color:red'> {action_type} </span> </span>"
             st.markdown(categorize_text, unsafe_allow_html=True)
             st.write("新しいことに慎重で、今のやり方を大切にする傾向があります。そのため、リスクを抑えながら安定した成果を目指す場面では強みを発揮できます。")
             st.write("一方で、新しい機会を逃しやすい傾向もあります。まずは小さな変化（資産の一部を使った実験的投資）から試すことで、安定性を保ちながら柔軟な判断力を育てることができます。")
         elif max_parsonal_bias == "楽観性バイアス":
-            categorize_text = f"<span style='font-size:30px'><span style='color:red'> 人生何とかなると思っているタイプ </span> </span>"
+            action_type = "人生何とかなると思っているタイプ"
+            categorize_text = f"<span style='font-size:30px'><span style='color:red'> {action_type} </span> </span>"
             st.markdown(categorize_text, unsafe_allow_html=True)
             st.write("あなたの前向きさは、挑戦を恐れずに行動できる大きな強みです。")
             st.write("一方で、リスクを軽視してしまう傾向もあるため、判断の前に「最悪のケース」を一度考えると、より安定した成果につながります。明るい見通しを持ちながらも、データや根拠を大切にする姿勢を意識していきましょう。")
         elif max_parsonal_bias == "悲観性バイアス":
-            categorize_text = f"<span style='font-size:30px'><span style='color:red'> 行動に常に心配がつきまとうタイプ </span> </span>"
+            action_type = "行動に常に心配がつきまとうタイプ"
+            categorize_text = f"<span style='font-size:30px'><span style='color:red'> {action_type} </span> </span>"
             st.markdown(categorize_text, unsafe_allow_html=True)
             st.write("あなたの慎重さは、大きな失敗を避けるうえで大きな強みです。")
             st.write("一方で、不安を感じすぎると行動が止まってしまうこともあります。まずは小さな成功体験を積み重ねながら、自分の判断への信頼を育てていきましょう。「慎重に考える力」を生かして、リスクを抑えながら安定的に成果を狙う投資が向いています。")
         elif max_parsonal_bias == "自信過剰":
-            categorize_text = f"<span style='font-size:30px'><span style='color:red'> 自分の判断に自信を持っているタイプ </span> </span>"
+            action_type = "自分の判断に自信を持っているタイプ"
+            categorize_text = f"<span style='font-size:30px'><span style='color:red'> {action_type} </span> </span>"
             st.markdown(categorize_text, unsafe_allow_html=True)
             st.write("あなたの決断力と行動力は、大きなチャンスをつかむための重要な強みです。")
             st.write("ただし、判断の根拠を客観的に確認する習慣を持つと、より安定した成果が得られます。自信を「経験に裏づけられた自信」に育てることで、長期的に安定した投資判断ができるようになります。")
@@ -1376,7 +1380,9 @@ if st.session_state.show_page:
             bias_df = st.session_state.Behavioral_Economics[st.session_state.Behavioral_Economics["バイアス"]==bias]
             st.write(bias_df["内容"].values[0])
             st.write("【例】")
-            st.write(f"　　{bias_df['例'].values[0]}")
+            st.write(f"　　{bias_df['例1'].values[0]}")
+            st.write(f"　　{bias_df['例2'].values[0]}")
+            st.write(f"　　{bias_df['例3'].values[0]}")
             st.subheader("")
 
 
@@ -1392,9 +1398,9 @@ if st.session_state.show_page:
 
 
         # 変数の割り当て(とりあえずテキトー)
-        action_type = "保守型"
+        # action_type = "保守型"
         # st.session_state.bias_class_port = pd.DataFrame(["バイアスの各分類の尺度"])
-        st.session_state.pointed_out_bias_df = pd.DataFrame(["指摘したバイアス"])
+        # st.session_state.pointed_out_bias_df = pd.DataFrame(["指摘したバイアス"])
 
         # ユーザからの情報をデータフレームとして受け取る
         Simulation_Result = {
@@ -1730,7 +1736,7 @@ else:
             st.subheader(f"第{i}回")
             result.display()
 
-            st.button("結果を見る", key=f"result_{i}", on_click=lambda res=result: change_page2(6, res.buy_log, res.sell_log, res.investment_result, res.self_eval))
+            # st.button("結果を見る", key=f"result_{i}", on_click=lambda res=result: change_page2(6, res.buy_log, res.sell_log, res.investment_result, res.self_eval))
 
             st.write("########################################################################################")
 
@@ -2494,8 +2500,9 @@ else:
             st.markdown(f'<p style="font-family:fantasy; color:blue; font-size: 24px;">{bias}</p>', unsafe_allow_html=True)
             bias_df = st.session_state.Behavioral_Economics[st.session_state.Behavioral_Economics["バイアス"]==bias]
             st.write(bias_df["内容"].values[0])
-            st.write("【例】")
-            st.write(f"　　{bias_df['例'].values[0]}")
+            st.write(f"　　{bias_df['例1'].values[0]}")
+            st.write(f"　　{bias_df['例2'].values[0]}")
+            st.write(f"　　{bias_df['例3'].values[0]}")
             st.subheader("")
 
         st.button("戻る", key='uniq_key_6',on_click=lambda: change_page2(2))
