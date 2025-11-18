@@ -1159,6 +1159,25 @@ if st.session_state.show_page:
         #         if st.button(" シミュレーションを終了する "):
         #             st.session_state.show_page = False
 
+    # バイアスのスコアを⭐︎で出力
+    def output_score_to_star(score):
+        if score >= 90:
+            score_temp = 5
+        elif score >= 70:
+            score_temp = 4
+        elif score >= 50:
+            score_temp = 3
+        elif score >= 30:
+            score_temp = 2
+        elif score >= 10:
+            score_temp = 1
+        else:
+            score_temp = 0
+
+        stars = "★" * score_temp + "☆" * (5 - score_temp)
+
+        return stars
+
     # 結果画面
     def simulation_result():
         st.title("シミュレーション結果")
@@ -1377,12 +1396,21 @@ if st.session_state.show_page:
         for i in range(0,3):
             bias = bias_score_df_sorted["バイアス"][i]
             st.markdown(f'<p style="font-family:fantasy; color:blue; font-size: 24px;">{bias}</p>', unsafe_allow_html=True)
+            st.write(f"スコア：{output_score_to_star(bias_score_df_sorted['点数'][i])}")
             bias_df = st.session_state.Behavioral_Economics[st.session_state.Behavioral_Economics["バイアス"]==bias]
             st.write(bias_df["内容"].values[0])
-            st.write("【例】")
-            st.write(f"　　{bias_df['例1'].values[0]}")
-            st.write(f"　　{bias_df['例2'].values[0]}")
-            st.write(f"　　{bias_df['例3'].values[0]}")
+            st.markdown(f"""
+                <div style="line-height:1.4">
+                【例】以下のような経験はありませんか？ <br>
+                ・{bias_df['例1'].values[0]} <br>
+                ・{bias_df['例2'].values[0]} <br>
+                ・{bias_df['例3'].values[0]} <br>
+                <br>
+                {bias_df["判定理由"].values[0]} <br>
+                {bias_df["改善案"].values[0]} <br>
+                </div>
+                """, unsafe_allow_html=True)
+
             st.subheader("")
 
 
@@ -2550,9 +2578,11 @@ else:
 
         st.session_state.system_eval15 = st.radio("15. システムの結果を見て自分の行動を変えようと思った。", satisfaction_arrow)
 
-        st.session_state.system_eval16 = st.radio("16. このシステムを継続的に利用したいと思う。", satisfaction_arrow)
+        st.session_state.system_eval16 = st.radio("15. 2回目以降のシミュレーションでは、それ以前の結果画面の内容を意識して行動したと思う。", satisfaction_arrow)
 
-        st.session_state.system_eval17 = st.radio("17. このシステムを誰かに薦めたいと思う。", satisfaction_arrow)
+        st.session_state.system_eval17 = st.radio("16. このシステムを継続的に利用したいと思う。", satisfaction_arrow)
+
+        st.session_state.system_eval18 = st.radio("17. このシステムを誰かに薦めたいと思う。", satisfaction_arrow)
 
         st.session_state.opinion = st.text_input("18. このシステムに関して改善点があれば教えてください。", value=st.session_state.get("opinion", ""))
 
