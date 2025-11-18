@@ -27,13 +27,13 @@ def scoring_bias(personal_df, situational_bias_df, after_simulation_self_eval_df
     # 損失銘柄ほど保有期間が長い,	購入金額比率が低く安定している,	主な購入根拠が「リスクが少ない」     max = 3
     situation_score_1 = 0
     if "損失回避傾向" in situational_bias_df["指摘バイアス"].tolist():
-        situation_score_1 += 1
+        situation_score_1 += 0.7
 
     if "損失回避傾向2" in situational_bias_df["指摘バイアス"].tolist():
-        situation_score_1 += 1
+        situation_score_1 += 0.7
 
     if after_simulation_self_eval_df["事後自己評価Q15"][0] == "リスクが少ない":
-        situation_score_1 += 1
+        situation_score_1 += 0.7
 
     # 重みをつけたスコア計算    性格：認知課題：事後事故評価：状況依存 ＝ 1.5 : 1.5 : 3 : 4
     score = (character_score * 0.15) + (cognition_score * 0.15) + (self_eval_score * 0.3) + (situation_score_1 * 0.4)
@@ -107,13 +107,13 @@ def scoring_bias(personal_df, situational_bias_df, after_simulation_self_eval_df
     # 売却後14日の間に最大株価が存在	平均保有期間が短い	主な売却根拠が「利益確定売り」
     situation_score = 0
     if "現在思考バイアス" in situational_bias_df["指摘バイアス"].tolist():
-        situation_score += 1
+        situation_score += 0.5
 
     if "現在思考バイアス2" in situational_bias_df["指摘バイアス"].tolist():
         situation_score += 1
 
-    if after_simulation_self_eval_df["事後自己評価Q15"][0] == "利益確定売り":
-        situation_score += 1
+    if after_simulation_self_eval_df["事後自己評価Q15"][0] == "確実な利益を得る":
+        situation_score += 0.5
 
     # 重みをつけたスコア計算    認知課題：事後事故評価：状況依存 ＝ 2 : 4 : 4
     score =  (cognition_score * 0.2) + (self_eval_score * 0.4) + (situation_score * 0.4)
