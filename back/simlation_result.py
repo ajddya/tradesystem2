@@ -24,7 +24,7 @@ class Simulation_Results:
         st.write(f"行動傾向: {self.action_type}")
         st.write(f"利益: {self.investment_result}") 
 
-        check = st.checkbox("投資行動の情報を表示", value = False)
+        check = st.checkbox("投資行動の情報を表示",key=f"result_{self.num}_{self.investment_result}", value = False)
         if check:
             st.write("購入ログ:")
             st.write(self.buy_log)
