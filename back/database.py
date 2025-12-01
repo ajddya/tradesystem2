@@ -254,3 +254,44 @@ def insert_survey_to_db():
     change_page2(1)
 
     save_db()
+
+def insert_survey2_to_db():
+
+    # データベースに接続
+    conn = sqlite3.connect('new_database.db')
+    cursor = conn.cursor()
+
+    # テーブルを削除
+    if debug_bool:
+        cursor.execute("drop table survey_info2")
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS survey_info2 (
+        ユーザ名 TEXT,
+        ユーザID TEXT,
+        システム評価1 TEXT,
+        システム評価2 TEXT,
+        システム評価3 TEXT,
+        システム評価4 TEXT,
+        システム評価5 INTEGER,
+        システム評価6 INTEGER,
+        システム評価7 TEXT
+    )
+    """)
+
+    # データの挿入または更新
+    cursor.execute("""
+    INSERT INTO survey_info2 (ユーザ名, ユーザID, システム評価1, システム評価2, システム評価3, システム評価4, システム評価5, システム評価6, システム評価7)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""", (st.session_state.acount_name, st.session_state.acount_ID, st.session_state.system2_eval1, st.session_state.system2_eval2, st.session_state.system2_eval3, st.session_state.system2_eval4, st.session_state.system2_eval5, st.session_state.system2_eval6, st.session_state.system2_eval7))
+
+    # データベースの変更をコミット
+    conn.commit()
+
+    # データベース接続のクローズ
+    conn.close()
+
+    # st.session_state.survey_bool = True
+    change_page2(1)
+
+    save_db()
+
