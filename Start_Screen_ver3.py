@@ -27,7 +27,7 @@ from back.some_trade_advice import some_trade_advice
 from back.advice import advice
 from back.classify_action_type import classify_action_type
 from back.reset import reset
-from back.database import save_userdata, insert_data_to_db, insert_survey_to_db
+from back.database import save_userdata, insert_data_to_db, insert_survey_to_db, insert_survey2_to_db
 from back.situational_dependency import situational_dependency
 from back.scoring_bias import scoring_bias
 
@@ -1692,7 +1692,14 @@ else:
         with col6:
             st.button("このシステムの使い方", on_click=lambda: change_page2(5))
 
-        st.button("これまでの実績", on_click=lambda: change_page2(2))
+        col7, col8 = st.columns((5, 5))
+        with col7:
+            st.button("これまでの実績", on_click=lambda: change_page2(2))
+
+        with col8:
+            st.button("システム2を利用", on_click=lambda: change_page2(8))
+
+        
         st.button("アカウント設定", on_click=lambda: change_page2(3))
 
         st.session_state.level_id = st.selectbox(
@@ -2590,6 +2597,202 @@ else:
         st.write("_______________________________________________________________________________________________________")
         st.button('戻る',on_click=lambda: change_page2(2))
 
+    # システム2(分類なし一律測定モデル)の画面
+    def page2_8():
+        st.title("システム2のスタート画面")
+        st.write("_______________________________________________________________________________________________________")
+        ##################################################################
+        #　システム2の説明
+        st.subheader("■ 本システム（簡易バイアス測定モデル）について")
+        st.write("このシステムでは、いくつかの簡単な質問に答えていただくことで、日ごろの考え方や判断の傾向を分析し、どの心理的クセ（認知バイアス）の影響を受けやすいかを推定します。")
+        st.write("過去の行動データやトレード結果は使わず、質問への回答だけをもとに判定するため、短時間で気軽に利用できます。")
+        st.write("ここで測定されたバイアスは、投資に限らず、日常生活でも判断に影響しやすい傾向を示しています。")
+        st.write("結果の確認を通して、自分の思考のクセを客観的に知り、今後の意思決定の改善に役立ててもらうことを目的としています。")
+        ##################################################################
+
+        if st.button("システム2を利用する"):
+            st.session_state.page_id2 = "use_sys2"
+            st.rerun()
+
+        st.write("_______________________________________________________________________________________________________")
+        st.button("スタート画面に戻る",on_click=lambda: change_page2(1))
+
+    # システム2の中身
+    def use_sys2():
+        st.title("システム2")
+
+        ##################################################################
+        #　各バイアスの質問
+        bias_Q_arrow = [
+            "全く違うと思う",
+            "少し違うと思う",
+            "どちらでもない",
+            "少しそう思う",
+            "強くそう思う"
+        ]
+
+        # 損失回避傾向
+        st.session_state.sys2_bias_Q1 = st.radio("買い物で得するチャンスよりも、損をする可能性のほうを強く気にしてしまう。", bias_Q_arrow, horizontal=True)
+        st.write("")
+        # 近視眼的思考
+        st.session_state.sys2_bias_Q2 = st.radio("長期的に得になる行動よりも、すぐに結果が得られる行動を優先することが多い。", bias_Q_arrow, horizontal=True)
+        st.write("")
+        # ブレークイーブン効果
+        st.session_state.sys2_bias_Q3 = st.radio("使わなくなったサブスクや趣味でも、払った分を無駄にしたくなくて解約や中止を後回しにしてしまうことがある。", bias_Q_arrow, horizontal=True)
+        st.write("")
+        # 現在思考バイアス
+        st.session_state.sys2_bias_Q4 = st.radio("将来のために貯金したり準備したりするより、今欲しいものを買うほうを選んでしまう。", bias_Q_arrow, horizontal=True)
+        st.write("")
+        # 現状維持バイアス
+        st.session_state.sys2_bias_Q5 = st.radio("もっと良くなる可能性があっても、普段の習慣・店・やり方を変えるのが面倒だと感じることが多い。", bias_Q_arrow, horizontal=True)
+        st.write("")
+        # 楽観性バイアス
+        st.session_state.sys2_bias_Q6 = st.radio("自分は遅刻・トラブル・事故・病気などにそこまで当てはまらないと思いがちだ。", bias_Q_arrow, horizontal=True)
+        st.write("")
+        # 自信過剰
+        st.session_state.sys2_bias_Q7 = st.radio("説明書や調べる前に『自分ならできるはず』と思って作業を始めることが多い。", bias_Q_arrow, horizontal=True)
+        st.write("")
+        # 保守主義バイアス
+        st.session_state.sys2_bias_Q8 = st.radio("新しいアプリやサービスに利点があっても、慣れているものを使い続けたいと思うほうだ。", bias_Q_arrow, horizontal=True)
+        st.write("")
+        # 後知恵バイアス
+        st.session_state.sys2_bias_Q9 = st.radio("出来事が起こった後で『こうなると思っていた』と振り返ることがよくある。", bias_Q_arrow, horizontal=True)
+        st.write("")
+        # 自己正当化バイアス
+        st.session_state.sys2_bias_Q10 = st.radio("自分の買い物や選択が失敗だったと感じても、『必要だったから』など理由をつけて納得しようとすることがある。", bias_Q_arrow, horizontal=True)
+        st.write("")
+        # ハロー効果
+        st.session_state.sys2_bias_Q11 = st.radio("見た目・第一印象・肩書きが良い人や物は、中身も優れていると思い込みがちだ。", bias_Q_arrow, horizontal=True)
+        st.write("")
+        # 権威バイアス
+        st.session_state.sys2_bias_Q12 = st.radio("テレビやネットで有名な人が言っているというだけで、その意見を信じてしまいやすい。", bias_Q_arrow, horizontal=True)
+        st.write("")
+        # 同調バイアス
+        st.session_state.sys2_bias_Q13 = st.radio("自分の本音よりも、周りの意見や多数派の選択に合わせるほうが安心する。", bias_Q_arrow, horizontal=True)
+
+        ##################################################################
+
+        if st.button("回答を送信"):
+            st.session_state.page_id2 = "result_sys2"
+            st.rerun()
+
+    # システム2の利用結果
+    def result_sys2():
+        st.title("回答結果")
+
+        st.write("")
+        st.write("以下はあなたが影響を受けていると思われる認知バイアスを表示しています。")
+        st.write("_______________________________________________________________________________________________________")
+
+        def decision(text):
+            if text == "少しそう思う" or text=="強くそう思う":
+                return True
+            else:
+                return False
+
+        def output(bias):
+            # bias = bias_score_df_sorted["バイアス"][i]
+            st.markdown(f'<p style="font-family:fantasy; color:blue; font-size: 24px;">{bias}</p>', unsafe_allow_html=True)
+            # st.write(f"スコア：{output_score_to_star(bias_score_df_sorted['点数'][i])}")
+            bias_df = st.session_state.Behavioral_Economics[st.session_state.Behavioral_Economics["バイアス"]==bias]
+            st.write(bias_df["内容"].values[0])
+            st.markdown(f"""
+                <div style="line-height:1.4">
+                【例】以下のような経験はありませんか？ <br>
+                ・{bias_df['例1'].values[0]} <br>
+                ・{bias_df['例2'].values[0]} <br>
+                ・{bias_df['例3'].values[0]} <br>
+                </div>
+                """, unsafe_allow_html=True)
+
+            st.subheader("")
+
+        ##################################################################
+        #　結果表示
+        # 影響の強いと思われるバイアスを表示
+        if decision(st.session_state.sys2_bias_Q1):
+            output("損失回避傾向")
+
+        if decision(st.session_state.sys2_bias_Q2):
+            output("近視眼的思考")
+
+        if decision(st.session_state.sys2_bias_Q3):
+            output("ブレークイーブン効果")
+
+        if decision(st.session_state.sys2_bias_Q4):
+            output("現在思考バイアス")
+
+        if decision(st.session_state.sys2_bias_Q5):
+            output("現状維持バイアス")
+
+        if decision(st.session_state.sys2_bias_Q6):
+            output("楽観性バイアス")
+
+        if decision(st.session_state.sys2_bias_Q7):
+            output("自信過剰")
+
+        if decision(st.session_state.sys2_bias_Q8):
+            output("保守主義バイアス")
+
+        if decision(st.session_state.sys2_bias_Q9):
+            output("後知恵バイアス")
+
+        if decision(st.session_state.sys2_bias_Q10):
+            output("自己正当化バイアス")
+
+        if decision(st.session_state.sys2_bias_Q11):
+            output("ハロー効果")
+
+        if decision(st.session_state.sys2_bias_Q12):
+            output("権威バイアス")
+
+        if decision(st.session_state.sys2_bias_Q13):
+            output("同調バイアス")
+
+
+        ##################################################################
+
+        if st.button("システム2の利用を終了する"):
+            st.session_state.page_id2 = "adv_sys2"
+            st.rerun()
+
+    # システム2の評価
+    def adv_sys2():
+        st.title("アンケート画面")
+
+        ##################################################################
+        #　アンケート
+        # システムの満足度
+        satisfaction_arrow = [
+            "全くそう思わない",
+            "あまりそう思わない",
+            "まあそう思う",
+            "非常にそう思う"
+        ]
+
+        st.session_state.system2_eval1 = st.radio("1. このシステムはシンプルで使いやすい。", satisfaction_arrow)
+
+        st.session_state.system2_eval2 = st.radio("2. このシステムは時間がかかると思う。", satisfaction_arrow)
+
+        st.session_state.system2_eval3 = st.radio("3. 結果表示が自分に合っていると感じた。", satisfaction_arrow)
+
+        st.session_state.system2_eval4 = st.radio("4. 提示された結果（ 行動傾向やバイアス分類）は信頼できると思う。", satisfaction_arrow)
+
+        st.session_state.system2_eval5 = st.slider("5. 指摘されたバイアスの共感度はどれくらいですか。", 1, 10, st.session_state.get("system_eval9", 1))
+
+        st.session_state.system2_eval6 = st.slider("6. 指摘内容の納得度はどれくらいですか。", 1, 10, st.session_state.get("system_eval10", 1))
+
+        st.session_state.system2_eval7 = st.text_input("7. どうして共感度、納得度そのような点数をつけましたか。", value=st.session_state.get("system_eval11", ""))
+
+        st.button("システムの評価を送る",on_click=insert_survey2_to_db)
+
+        ##################################################################
+
+        # if st.button("アンケートを送信する"):
+        #     # dbにデータを格納 #
+        #     change_page2(1)
+        #     st.rerun()
+
     # データベースの確認
     def page2_99():
         # データベースの中身を確認する
@@ -2641,13 +2844,19 @@ else:
 
         # personal_info テーブルからすべてのデータを取得
         query = "SELECT * FROM survey_info"
-        df3 = pd.read_sql_query(query, conn)
+        df4 = pd.read_sql_query(query, conn)
+
+        query = "SELECT * FROM survey_info2"
+        df5 = pd.read_sql_query(query, conn)
 
         # データベース接続をクローズ
         conn.close()
 
         st.write("survey.db")
-        st.write(df3)
+        st.write(df4)
+
+        st.write("survey2.db")
+        st.write(df5)
 
         st.write("_______________________________________________________________________________________________________")
         st.button("スタート画面に戻る",on_click=lambda: change_page2(1))
@@ -2685,6 +2894,18 @@ else:
 
     if st.session_state.page_id2 == "page2_7":
         page2_7()
+
+    if st.session_state.page_id2 == "page2_8":
+        page2_8()
+
+    if st.session_state.page_id2 == "use_sys2":
+        use_sys2()
+
+    if st.session_state.page_id2 == "result_sys2":
+        result_sys2()
+
+    if st.session_state.page_id2 == "adv_sys2":
+        adv_sys2()
 
     if st.session_state.page_id2 == "page2_99":
         page2_99()
